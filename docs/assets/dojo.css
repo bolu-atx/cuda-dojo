@@ -84,6 +84,8 @@
 }
 .dojo-btn:hover { background: var(--dojo-accent-dim); color: #fff; }
 .dojo-btn:disabled { opacity: 0.4; cursor: default; }
+.dojo-btn--warn { background: var(--dojo-warn); color: #fff; }
+.dojo-btn--warn:hover { background: #b24a26; color: #fff; }
 
 .dojo-readout {
   font-family: var(--md-code-font-family, monospace);
@@ -94,6 +96,28 @@
 .dojo-readout b { color: var(--dojo-accent); }
 .dojo-readout .warn { color: var(--dojo-warn); font-weight: 700; }
 .dojo-readout .good { color: var(--dojo-accent); font-weight: 700; }
+
+/* Inline SVG diagrams — theme via currentColor so light/dark just works.
+   Markdown pages drop an <svg class="dojo-diagram"> straight into the page. */
+.dojo-diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 760px;
+  margin: 1.4rem auto;
+  color: var(--md-default-fg-color, #333);   /* drives stroke/fill=currentColor */
+  font-family: var(--md-code-font-family, monospace);
+}
+.dojo-diagram .accent { color: var(--dojo-accent); }     /* nest to recolor a group */
+.dojo-diagram text { fill: currentColor; }
+.dojo-diagram .stroke { stroke: currentColor; fill: none; }
+.dojo-diagram .label { font-size: 13px; }
+.dojo-diagram .mono { font-family: var(--md-code-font-family, monospace); font-size: 12px; }
+.dojo-diagram .fill-accent { fill: var(--dojo-accent); }
+.dojo-diagram .fill-faint { fill: rgba(128, 128, 128, 0.15); }
+.dojo-diagram .stroke-accent { stroke: var(--dojo-accent); fill: none; }
+.dojo-diagram .stroke-faint { stroke: rgba(128, 128, 128, 0.5); fill: none; }
+.dojo-diagram .stroke-warn { stroke: var(--dojo-warn); fill: none; }
 
 /* "answer this" prompt blocks for the Feynman buildup */
 .dojo-quiz {

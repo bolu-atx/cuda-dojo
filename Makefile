@@ -11,7 +11,7 @@
 #   make test            run every level's tests
 #   make dep-check       verify the toolchain (nvcc, cmake, generator, docs)
 #   make docs            build the static docs site into ./out/docs
-#   make docs-serve      live-preview the docs at http://127.0.0.1:8000
+#   make docs-serve      live-preview the docs at http://127.0.0.1:9090
 #   make clean           remove the CMake build directory
 #   make distclean       also remove ./out and ./.venv
 #   make help            list all targets (including per-level ones)
@@ -72,7 +72,7 @@ docs: docs-deps
 	@$(VENV)/bin/mkdocs build
 
 docs-serve: docs-deps
-	@$(VENV)/bin/mkdocs serve
+	@$(VENV)/bin/mkdocs serve -a 127.0.0.1:9090
 
 # ---- docker --------------------------------------------------------------
 # The image holds the whole CUDA toolkit + build deps; the repo is bind-mounted
@@ -148,7 +148,7 @@ help:
 	@echo "  test            run all CTest tests"
 	@echo "  dep-check       verify toolchain (nvcc, cmake, generator, profilers)"
 	@echo "  docs            build static docs site into ./out/docs"
-	@echo "  docs-serve      live docs preview (http://127.0.0.1:8000)"
+	@echo "  docs-serve      live docs preview (http://127.0.0.1:9090)"
 	@echo "  docker-build    build the CUDA toolchain image"
 	@echo "  docker-compile  compile in-container, no GPU needed (all-major)"
 	@echo "  docker-test     build + test in-container (needs --gpus all)"
