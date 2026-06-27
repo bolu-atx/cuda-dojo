@@ -76,3 +76,8 @@ To help with learning CUDA concepts:
 
 ![CUDA Cheatsheet](docs/assets/cuda-cheatsheet.png)
 ![CUDA Cheatsheet Page 2](docs/assets/cuda-cheatsheet-2.png)
+
+## License
+
+BSD 3-Clause. Redistribution must retain the copyright notice, license terms,
+and disclaimer; see [LICENSE](LICENSE).
