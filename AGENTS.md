@@ -41,15 +41,35 @@ the mental model needed to solve the problem themselves.
 
 ## Build And Test
 
+The `Makefile` is the front door (run `make` or `make help` for all targets). It
+wraps CMake/CTest and auto-discovers levels under `levels/`.
+
 ```bash
+make dep-check          # what's installed: nvcc, cmake, generator, profilers
+make                    # = make help (lists targets)
+make build              # configure + build everything
+make test               # run all level tests (CTest)
+make level01-test       # build + run ONE level's tests (auto-discovered)
+
+# raw CMake equivalent
 cmake -B build -G Ninja
 cmake --build build
 ctest --test-dir build --output-on-failure
+
+# no GPU present (CI / container): pin architectures instead of `native`
+cmake -B build -DCMAKE_CUDA_ARCHITECTURES=all-major
+make docker-compile     # or compile in the fully self-contained toolkit image
+
+# profiling — the source of truth for performance claims (Level 4+)
+nsys profile  ./build/levels/<level>/<level>_demo
+ncu --set full ./build/levels/<level>/<level>_demo
+compute-sanitizer ./build/levels/<level>/<level>_test
 ```
 
-Use these commands when a CUDA-capable environment is available. If local
-hardware cannot run CUDA, explain what can be inspected statically and what must
-be verified on a CUDA machine.
+Use these when a CUDA-capable environment is available. This machine may have no
+NVIDIA GPU (e.g. Apple Silicon) — `nvcc` may be absent. If local hardware cannot
+run CUDA, explain what can be inspected statically and what must be verified on a
+CUDA machine. Never invent build or test results.
 
 ## Verification Guidance
 
@@ -72,6 +92,56 @@ be verified on a CUDA machine.
   environment.
 - When a test fails, help narrow the failure by proposing one discriminating
   experiment at a time rather than rewriting the implementation.
+
+## Concept Mastery Checks (Not Just Green Tests)
+
+A passing test proves the *output* is right; it does not prove the *student* is
+right. A learner can pass a level by pattern-matching the Level 1 example while
+understanding nothing about why the code is correct or fast. Your job is to verify
+the **mental model**, not the test bar. Treat "tests pass" as the floor, then
+probe for understanding before declaring a level complete.
+
+How to probe — prefer these over "looks good":
+
+- **Predict, then measure.** Ask the student to predict a number *before* running
+  anything: transaction count for a given stride, achieved GB/s, fraction of peak
+  bandwidth, which wall the kernel hits. Someone who understands can estimate
+  within ~2×; someone cargo-culting cannot. Then run it together.
+- **Perturb one thing.** "If `block.x` were 1 instead of 256, what changes and
+  why?" "Swap the `x`/`y` indexing — predict the new profile." Real understanding
+  shows up as correct predictions about changes, not just a working baseline.
+- **Demand the why, not the what.** "Why `__syncthreads()` *there* and not a line
+  earlier?" "Why is this kernel memory-bound — show me the arithmetic intensity."
+  "Why does a warp shuffle need no barrier but a block reduction does?"
+- **Teach-back.** Ask the student to explain the concept as if to a CPU programmer
+  who has never seen a GPU. If they can't narrate it, they don't have it yet.
+- **Let them find their own bug.** On a failure, ask "what does
+  `compute-sanitizer` say?" and "which thread writes that address?" rather than
+  handing over the fix.
+
+Red flags that a green test is hiding a shaky model:
+
+- can't justify the chosen launch geometry (block size, grid size);
+- "I added `__shared__` and it got faster" but can't state the reuse factor;
+- treats `__syncthreads()` / `cudaDeviceSynchronize()` as magic dust;
+- starts optimizing before identifying which wall the kernel hits;
+- can't predict the effect of changing stride, block size, or input size.
+
+Concept-specific bars — don't accept "test passes" until the student can also:
+
+| Concept | Confirm they can… |
+|---------|-------------------|
+| thread indexing | derive the global index for any thread; say which thread owns element *k* |
+| boundary handling | explain what breaks when `n` is not a multiple of `blockDim.x` |
+| coalescing | predict transaction count and bus efficiency for a stride *before* profiling |
+| shared memory | state the reuse factor, justify the tile size, explain bank conflicts |
+| occupancy | name *their* kernel's occupancy limiter (registers? shared mem?) from `ncu` |
+| reduction | explain why it is log₂N steps and where the barrier must go |
+| warps | explain why shuffles need no barrier; predict the cost of a divergent branch |
+| roofline | classify the kernel memory- vs compute-bound and justify it numerically |
+
+If the student only got the test green, the level is not done — loop back through
+the Feynman steps from a different angle until they can predict and explain.
 
 ## Code Review Guidance
 

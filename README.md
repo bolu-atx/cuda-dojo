@@ -14,18 +14,53 @@ is **C++23**, device code is **C++20** (the highest CUDA reliably supports for
 
 ## Build & test
 
+The `Makefile` is the front door — it wraps CMake/CTest and auto-discovers levels
+from `levels/`, so per-level targets appear automatically as levels are added.
+
 ```bash
-cmake -B build -G Ninja          # configure (targets the local GPU arch)
-cmake --build build              # build everything
-ctest --test-dir build --output-on-failure   # run all level tests
+make dep-check        # verify toolchain (nvcc, cmake, generator, profilers)
+make                  # configure + build everything
+make test             # run all level tests (CTest)
+
+make level01          # build one level's kernel lib + demo
+make level01-test     # build + run just that level's tests
+make help             # list every target, including per-level ones
+make clean            # remove ./build (distclean also drops ./site, ./.venv)
+```
+
+Prefer raw CMake? It works the same:
+
+```bash
+cmake -B build -G Ninja                        # configure (targets local GPU arch)
+cmake --build build -j                          # build everything
+ctest --test-dir build --output-on-failure      # run all tests
 ./build/levels/level01_vector_add/level01_demo   # run a level's demo
 ```
 
-Pin specific architectures instead of autodetecting:
+Pin specific architectures instead of autodetecting (required when building
+without a GPU present, e.g. in CI or a container):
 
 ```bash
-cmake -B build -DCMAKE_CUDA_ARCHITECTURES="80;86;90"
+cmake -B build -DCMAKE_CUDA_ARCHITECTURES="80;86;90"   # or: all-major
 ```
+
+## Docker (self-contained toolchain)
+
+The image encapsulates the **entire CUDA toolkit** (nvcc, cuBLAS, cuFFT, …) plus
+build deps — no host CUDA install needed. The one thing it can't contain is the
+NVIDIA **kernel driver**: that stays on the host and is bridged in at runtime by
+the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+(`--gpus all`). So *compiling* needs no GPU, but *running kernels* needs a GPU host.
+
+```bash
+make docker-build     # build the toolchain image
+make docker-compile   # compile in-container WITHOUT a GPU (all-major) — CI/Mac friendly
+make docker-test      # build + test in-container (needs a GPU host + --gpus all)
+make docker-shell     # interactive shell, repo bind-mounted, --gpus all
+```
+
+VS Code users: **Reopen in Container** uses `.devcontainer/` (GPU optional, so it
+opens and compiles even on machines without an NVIDIA GPU).
 
 ## Project layout
 
@@ -74,9 +109,20 @@ nsys profile ./build/levels/.../levelNN_demo     # timeline: transfers, kernels,
 ncu --set full ./build/levels/.../levelNN_demo    # per-kernel: occupancy, memory, roofline
 ```
 
+## Interactive guide (docs)
+
+A Feynman-style, level-by-level companion site with **interactive canvas widgets**
+(thread indexing, SIMT divergence, coalescing, roofline, reduction, streams …)
+lives in `docs/`, built with MkDocs Material.
+
+```bash
+make docs-serve       # live preview at http://127.0.0.1:8000
+make docs             # build static site into ./site
+```
+
 ## Cheatsheets
 
-To help with learning CUDA concepts:
+To help with learning CUDA concepts (these are designed to be printed on standard Letter-sized paper):
 
 ![CUDA Cheatsheet](docs/assets/cuda-cheatsheet.png)
 ![CUDA Cheatsheet Page 2](docs/assets/cuda-cheatsheet-2.png)

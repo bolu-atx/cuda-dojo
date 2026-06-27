@@ -32,7 +32,7 @@ LEVEL_DIRS  := $(sort $(wildcard levels/level*))
 LEVELS      := $(foreach d,$(LEVEL_DIRS),$(firstword $(subst _, ,$(notdir $(d)))))
 LEVEL_TESTS := $(addsuffix -test,$(LEVELS))
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := help
 IMAGE       := cuda-dojo:dev
 DOCKER_DIR  := build-docker
 
@@ -74,10 +74,39 @@ docs: docs-deps
 docs-serve: docs-deps
 	@$(VENV)/bin/mkdocs serve
 
+# ---- docker --------------------------------------------------------------
+# The image holds the whole CUDA toolkit + build deps; the repo is bind-mounted
+# so edits don't require a rebuild. A separate build dir (build-docker/) keeps
+# container artifacts from clobbering a host build/.
+#
+#   make docker-build     build the toolchain image
+#   make docker-compile   compile in-container WITHOUT a GPU (verifies it builds)
+#   make docker-test      build + run tests in-container (needs --gpus all)
+#   make docker-shell     interactive shell in-container (--gpus all)
+DOCKER_RUN  := docker run --rm -v "$(CURDIR)":/workspace -w /workspace
+DOCKER_GPU  := --gpus all
+
+docker-build:
+	@docker build -t $(IMAGE) .
+
+docker-compile: docker-build
+	@$(DOCKER_RUN) $(IMAGE) bash -c '\
+	  cmake -B $(DOCKER_DIR) -G Ninja -DCMAKE_CUDA_ARCHITECTURES=all-major && \
+	  cmake --build $(DOCKER_DIR) -j $(JOBS)'
+
+docker-test: docker-build
+	@$(DOCKER_RUN) $(DOCKER_GPU) $(IMAGE) bash -c '\
+	  cmake -B $(DOCKER_DIR) -G Ninja -DCMAKE_CUDA_ARCHITECTURES=native && \
+	  cmake --build $(DOCKER_DIR) -j $(JOBS) && \
+	  ctest --test-dir $(DOCKER_DIR) --output-on-failure'
+
+docker-shell: docker-build
+	@$(DOCKER_RUN) $(DOCKER_GPU) -it $(IMAGE) bash
+
 # ---- housekeeping --------------------------------------------------------
 clean:
-	@rm -rf $(BUILD_DIR)
-	@echo "removed $(BUILD_DIR)/"
+	@rm -rf $(BUILD_DIR) $(DOCKER_DIR)
+	@echo "removed $(BUILD_DIR)/ and $(DOCKER_DIR)/"
 
 distclean: clean
 	@rm -rf site $(VENV)
@@ -114,13 +143,17 @@ dep-check:
 
 # ---- help ----------------------------------------------------------------
 help:
-	@echo "CUDA Dojo make targets"
-	@echo "  all (default)   configure + build everything"
-	@echo "  build / test    build all / run all CTest tests"
+	@echo "CUDA Dojo make targets   (default: help)"
+	@echo "  all / build     configure + build everything"
+	@echo "  test            run all CTest tests"
 	@echo "  dep-check       verify toolchain (nvcc, cmake, generator, profilers)"
 	@echo "  docs            build static docs site into ./site"
 	@echo "  docs-serve      live docs preview (http://127.0.0.1:8000)"
-	@echo "  clean           remove ./$(BUILD_DIR)"
+	@echo "  docker-build    build the CUDA toolchain image"
+	@echo "  docker-compile  compile in-container, no GPU needed (all-major)"
+	@echo "  docker-test     build + test in-container (needs --gpus all)"
+	@echo "  docker-shell    interactive shell in-container (--gpus all)"
+	@echo "  clean           remove ./$(BUILD_DIR) and ./$(DOCKER_DIR)"
 	@echo "  distclean       also remove ./site and ./$(VENV)"
 	@echo
 	@echo "per-level (auto-discovered from levels/):"
