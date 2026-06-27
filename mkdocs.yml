@@ -1,0 +1,66 @@
+site_name: CUDA Dojo
+site_description: A level-by-level, Feynman-style interactive guide to CUDA.
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: light green
+      accent: light green
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: light green
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+extra_css:
+  - assets/dojo.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - assets/dojo.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - "Level 0 — GPU Mental Model": level00-mental-model.md
+  - "Level 1 — CUDA Basics": level01-basics.md
+  - "Level 2 — Thread Mapping": level02-thread-mapping.md
+  - "Level 3 — Memory Hierarchy": level03-memory-hierarchy.md
+  - "Level 4 — Performance Thinking": level04-performance.md
+  - "Level 5 — Shared-Memory Algorithms": level05-shared-memory.md
+  - "Level 6 — Warp Programming": level06-warps.md
+  - "Level 7 — CUDA Libraries": level07-libraries.md
+  - "Level 8 — Streams & Asynchrony": level08-streams.md
+  - "Level 9 — Multi-Kernel Algorithms": level09-multi-kernel.md
+  - "Level 10 — Production Optimization": level10-optimization.md
+  - "Level 11 — Advanced CUDA": level11-advanced.md
+  - "Level 12 — Production Architecture": level12-architecture.md
+  - "Level 13 — Algorithm Design": level13-algorithm-design.md

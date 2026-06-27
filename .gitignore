@@ -1,0 +1,12 @@
+build/
+*.o
+*.obj
+*.exe
+compile_commands.json
+.cache/
+.vscode/
+.idea/
+*.ncu-rep
+*.nsys-rep
+*.qdrep
+*.sqlite

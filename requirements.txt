@@ -1,0 +1,6 @@
+# Docs site (interactive Feynman-style CUDA guide).
+#   python3 -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#   mkdocs serve         # live preview at http://127.0.0.1:8000
+#   mkdocs build         # static site into ./site
+mkdocs-material>=9.5
