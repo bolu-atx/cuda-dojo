@@ -69,3 +69,10 @@ Release builds compile with `-lineinfo` so the profilers map SASS back to source
 nsys profile ./build/levels/.../levelNN_demo     # timeline: transfers, kernels, gaps
 ncu --set full ./build/levels/.../levelNN_demo    # per-kernel: occupancy, memory, roofline
 ```
+
+## Cheatsheets
+
+To help with learning CUDA concepts:
+
+![CUDA Cheatsheet](docs/assets/cuda-cheatsheet.png)
+![CUDA Cheatsheet Page 2](docs/assets/cuda-cheatsheet-2.png)
