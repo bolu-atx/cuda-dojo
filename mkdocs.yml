@@ -5,6 +5,8 @@ site_dir: out/docs
 
 theme:
   name: material
+  logo: assets/mkdocs-logo.webp
+  favicon: assets/mkdocs-logo.webp
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
