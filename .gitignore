@@ -1,4 +1,6 @@
 build/
+site/
+.venv/
 *.o
 *.obj
 *.exe

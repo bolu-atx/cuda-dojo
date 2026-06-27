@@ -1,0 +1,26 @@
+{
+  "name": "CUDA Dojo",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": ".."
+  },
+  // GPU is used when the host has one (driver + NVIDIA Container Toolkit), and
+  // the container still opens on machines without a GPU so you can edit/compile.
+  "hostRequirements": {
+    "gpu": "optional"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "nvidia.nsight-vscode-edition"
+      ],
+      "settings": {
+        "cmake.generator": "Ninja"
+      }
+    }
+  },
+  // Sanity-print the toolchain on first create (won't fail the build).
+  "postCreateCommand": "cmake --version && (nvcc --version || echo 'nvcc present at build time; GPU needed only to run)')"
+}

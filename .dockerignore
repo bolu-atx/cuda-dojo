@@ -1,0 +1,9 @@
+# The image is a pure toolchain; sources are bind-mounted at run time, so even
+# these are mostly irrelevant — but keep any build context small and clean.
+.git/
+build/
+build-docker/
+site/
+.venv/
+*.ncu-rep
+*.nsys-rep

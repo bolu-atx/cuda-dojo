@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/dojo-logo.webp" alt="CUDA Dojo Logo" width="300" />
+</p>
+
 # CUDA Dojo
 
 A level-by-level CUDA learning project, structured as a skill tree rather than a
