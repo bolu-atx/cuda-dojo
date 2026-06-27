@@ -10,10 +10,10 @@
 #   make level01-test    build + run level 1's tests
 #   make test            run every level's tests
 #   make dep-check       verify the toolchain (nvcc, cmake, generator, docs)
-#   make docs            build the static docs site into ./site
+#   make docs            build the static docs site into ./out/docs
 #   make docs-serve      live-preview the docs at http://127.0.0.1:8000
 #   make clean           remove the CMake build directory
-#   make distclean       also remove ./site and ./.venv
+#   make distclean       also remove ./out and ./.venv
 #   make help            list all targets (including per-level ones)
 
 BUILD_DIR := build
@@ -109,8 +109,8 @@ clean:
 	@echo "removed $(BUILD_DIR)/ and $(DOCKER_DIR)/"
 
 distclean: clean
-	@rm -rf site $(VENV)
-	@echo "removed site/ and $(VENV)/"
+	@rm -rf out $(VENV)
+	@echo "removed out/ and $(VENV)/"
 
 # ---- dependency check ----------------------------------------------------
 # Non-fatal report of what's installed. Exits non-zero only if a required
@@ -147,14 +147,14 @@ help:
 	@echo "  all / build     configure + build everything"
 	@echo "  test            run all CTest tests"
 	@echo "  dep-check       verify toolchain (nvcc, cmake, generator, profilers)"
-	@echo "  docs            build static docs site into ./site"
+	@echo "  docs            build static docs site into ./out/docs"
 	@echo "  docs-serve      live docs preview (http://127.0.0.1:8000)"
 	@echo "  docker-build    build the CUDA toolchain image"
 	@echo "  docker-compile  compile in-container, no GPU needed (all-major)"
 	@echo "  docker-test     build + test in-container (needs --gpus all)"
 	@echo "  docker-shell    interactive shell in-container (--gpus all)"
 	@echo "  clean           remove ./$(BUILD_DIR) and ./$(DOCKER_DIR)"
-	@echo "  distclean       also remove ./site and ./$(VENV)"
+	@echo "  distclean       also remove ./out and ./$(VENV)"
 	@echo
 	@echo "per-level (auto-discovered from levels/):"
 	@for l in $(LEVELS); do printf "  %-15s build %s\n" "$$l" "$$l"; done

@@ -1,7 +1,7 @@
 .DS_Store
 build/
 build-docker/
-site/
+out/
 .venv/
 *.o
 *.obj
