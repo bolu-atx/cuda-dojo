@@ -1,6 +1,8 @@
 site_name: CUDA Dojo
 site_description: A level-by-level, Feynman-style interactive guide to CUDA.
 site_url: https://cuda-dojo.bolu.dev/
+repo_url: https://github.com/bolu-atx/cuda-dojo
+repo_name: bolu-atx/cuda-dojo
 docs_dir: docs
 site_dir: out/docs
 

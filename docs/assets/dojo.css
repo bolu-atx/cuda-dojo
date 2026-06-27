@@ -11,38 +11,80 @@
 }
 
 /* Left sidebar: separate the section navigation from the integrated page TOC.
-   With toc.integrate the page's "Table of contents" is folded into the left nav;
-   give it a clear divider + accent label so it reads as a distinct, page-local
-   index, and make it sticky so the page nav follows the reader while scrolling
-   (the sidebar itself is already sticky in Material). */
+   With toc.integrate the page's "Table of contents" is folded into the left nav.
+   It gets its own treatment — a labelled, page-local index with a continuous
+   guide rail and a sliding accent marker for the heading currently in view —
+   so it reads as a distinct mini-map rather than more nav links. The block is
+   sticky so it follows the reader (the sidebar itself is already sticky). */
 .md-sidebar--primary .md-nav--secondary {
   position: sticky;
-  top: 0;
-  margin-top: 1rem;
-  padding-top: 0.6rem;
-  border-top: 2px solid var(--dojo-grid-line);
+  top: 0.4rem;
+  margin-top: 0.4rem;
+  padding-top: 0.2rem;
   background: var(--md-default-bg-color);
+  border-left: 0;               /* drop Material's own colored side rails… */
+  border-right: 0;              /* …we draw a single grey rail on the list */
 }
-.md-sidebar--primary .md-nav--secondary > .md-nav__title {
-  color: var(--dojo-accent);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding-top: 0;
-  box-shadow: none;
+
+/* Continuous faint guide rail down the whole TOC list. */
+.md-sidebar--primary .md-nav--secondary > .md-nav__list {
+  position: relative;
+  padding-left: 0;
 }
-.md-sidebar--primary .md-nav--secondary .md-nav__link--active,
-.md-sidebar--primary .md-nav--secondary .md-nav__link--passed:hover,
+.md-sidebar--primary .md-nav--secondary > .md-nav__list::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+  bottom: 0.1rem;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--dojo-grid-line);
+}
+
+/* Compact, refined TOC links with a hover that fills toward the rail. */
+.md-sidebar--primary .md-nav--secondary .md-nav__link {
+  position: relative;
+  margin: 0;
+  padding: 0.26rem 0.5rem 0.26rem 0.9rem;
+  font-size: 0.66rem;
+  line-height: 1.35;
+  color: var(--md-default-fg-color--light);
+  border-radius: 0 5px 5px 0;
+  transition: color 120ms ease, background-color 120ms ease;
+}
 .md-sidebar--primary .md-nav--secondary .md-nav__link:hover {
+  color: var(--md-default-fg-color);
+  background: color-mix(in srgb, var(--dojo-accent) 12%, transparent);
+}
+
+/* Sliding accent marker: the in-view heading gets a solid green rail segment
+   (laid over the faint rail) plus bold accent text. */
+.md-sidebar--primary .md-nav--secondary .md-nav__link::before {
+  content: "";
+  position: absolute;
+  left: 0;                      /* sit directly on top of the list's guide rail */
+  top: 50%;
+  height: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--dojo-accent);
+  transform: translateY(-50%);
+  transition: height 160ms ease;
+}
+.md-sidebar--primary .md-nav--secondary .md-nav__link--active {
   color: var(--dojo-accent);
+  font-weight: 700;
 }
-/* a thin accent rail marks the heading currently in view within the page TOC */
-.md-sidebar--primary .md-nav--secondary .md-nav__item {
-  border-left: 2px solid transparent;
+.md-sidebar--primary .md-nav--secondary .md-nav__link--active::before {
+  height: calc(100% - 0.2rem);  /* marker grows to cover the active link */
 }
-.md-sidebar--primary .md-nav--secondary .md-nav__item:has(> .md-nav__link--active) {
-  border-left-color: var(--dojo-accent);
+
+/* Nested sub-headings sit a touch deeper for visible hierarchy. */
+.md-sidebar--primary .md-nav--secondary .md-nav__item .md-nav__item .md-nav__link {
+  padding-left: 1.5rem;
+  font-size: 0.63rem;
+  opacity: 0.85;
 }
 
 /* Bigger header logo — Material defaults to a small ~24px mark. */
