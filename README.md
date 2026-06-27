@@ -12,6 +12,32 @@ is **C++23**, device code is **C++20** (the highest CUDA reliably supports for
 > **Hardware:** CUDA requires an NVIDIA GPU. macOS/Apple Silicon cannot build or
 > run this — develop on a Linux/Windows box with the CUDA Toolkit installed.
 
+## How to use this
+
+CUDA Dojo is a hands-on **learning template**, not a library to depend on. The
+intended loop is: get your own copy, work a level until you can *explain* it, then
+climb the tree. The [interactive guide](https://cuda-dojo.bolu.dev/) teaches the
+mental model; the `levels/` code is where you prove you have it.
+
+1. **Get your own copy.** Click **Use this template** on GitHub (or fork) to start
+   a personal repo you can commit your solutions into, then clone it:
+   ```bash
+   git clone https://github.com/<you>/cuda-dojo.git
+   cd cuda-dojo
+   make dep-check        # confirm your CUDA toolchain is ready
+   ```
+2. **Read the level, then the code.** Open the matching page in the
+   [interactive guide](https://cuda-dojo.bolu.dev/) (or `make docs-serve` for a
+   local copy), play with the widgets until the concept clicks, then read the
+   kernels in `levels/levelNN_<topic>/`.
+3. **Build and prove it.** `make levelNN-test` compiles the level and runs it
+   against a CPU reference. A green test is the *floor*, not the goal — make sure
+   you can predict the numbers (transactions, bandwidth, occupancy), not just pass.
+4. **Extend, then continue.** Each level ends with "your reps" — small variations
+   to implement yourself. Scaffold a new level with `add_dojo_level(...)` (see
+   [Anatomy of a level](#anatomy-of-a-level)) and work up the
+   [skill tree](#the-skill-tree).
+
 ## Build & test
 
 The `Makefile` is the front door — it wraps CMake/CTest and auto-discovers levels

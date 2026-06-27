@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/dojo-logo.webp" alt="CUDA Dojo logo" width="300" />
+</p>
+
 # CUDA Dojo
 
 > *"What I cannot create, I do not understand."* — Richard Feynman
