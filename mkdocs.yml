@@ -1,6 +1,7 @@
 site_name: CUDA Dojo
 site_description: A level-by-level, Feynman-style interactive guide to CUDA.
 docs_dir: docs
+site_dir: out/docs
 
 theme:
   name: material

@@ -25,7 +25,7 @@ make test             # run all level tests (CTest)
 make level01          # build one level's kernel lib + demo
 make level01-test     # build + run just that level's tests
 make help             # list every target, including per-level ones
-make clean            # remove ./build (distclean also drops ./site, ./.venv)
+make clean            # remove ./build (distclean also drops ./out, ./.venv)
 ```
 
 Prefer raw CMake? It works the same:
@@ -117,7 +117,7 @@ lives in `docs/`, built with MkDocs Material.
 
 ```bash
 make docs-serve       # live preview at http://127.0.0.1:8000
-make docs             # build static site into ./site
+make docs             # build static site into ./out/docs
 ```
 
 ## Cheatsheets
