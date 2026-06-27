@@ -10,6 +10,41 @@
   --dojo-grid-line: rgba(128, 128, 128, 0.35);
 }
 
+/* Left sidebar: separate the section navigation from the integrated page TOC.
+   With toc.integrate the page's "Table of contents" is folded into the left nav;
+   give it a clear divider + accent label so it reads as a distinct, page-local
+   index, and make it sticky so the page nav follows the reader while scrolling
+   (the sidebar itself is already sticky in Material). */
+.md-sidebar--primary .md-nav--secondary {
+  position: sticky;
+  top: 0;
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  border-top: 2px solid var(--dojo-grid-line);
+  background: var(--md-default-bg-color);
+}
+.md-sidebar--primary .md-nav--secondary > .md-nav__title {
+  color: var(--dojo-accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-top: 0;
+  box-shadow: none;
+}
+.md-sidebar--primary .md-nav--secondary .md-nav__link--active,
+.md-sidebar--primary .md-nav--secondary .md-nav__link--passed:hover,
+.md-sidebar--primary .md-nav--secondary .md-nav__link:hover {
+  color: var(--dojo-accent);
+}
+/* a thin accent rail marks the heading currently in view within the page TOC */
+.md-sidebar--primary .md-nav--secondary .md-nav__item {
+  border-left: 2px solid transparent;
+}
+.md-sidebar--primary .md-nav--secondary .md-nav__item:has(> .md-nav__link--active) {
+  border-left-color: var(--dojo-accent);
+}
+
 /* Bigger header logo — Material defaults to a small ~24px mark. */
 .md-header__button.md-logo {
   padding: 0.2rem 0.4rem;
