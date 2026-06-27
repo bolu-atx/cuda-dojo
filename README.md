@@ -116,7 +116,7 @@ A Feynman-style, level-by-level companion site with **interactive canvas widgets
 lives in `docs/`, built with MkDocs Material.
 
 ```bash
-make docs-serve       # live preview at http://127.0.0.1:8000
+make docs-serve       # live preview at http://127.0.0.1:9090
 make docs             # build static site into ./out/docs
 ```
 

@@ -10,19 +10,21 @@ memory hierarchy *is* the performance.
 
 ## The latency cliff
 
-You already met this at Level 0; now make it concrete. Each tier you fall through
-costs roughly an order of magnitude more cycles:
+You already met this at Level 0; now make it concrete on the **RTX PRO 6000
+Blackwell**. Each tier you fall through costs roughly an order of magnitude more
+cycles. Drag the *reuse factor* to see why staging data in shared memory is the
+whole game:
 
-<div data-dojo="mem-latency"></div>
+<div data-dojo="mem-hierarchy"></div>
 
-| Space | Latency | Scope | You control it via |
-|-------|---------|-------|--------------------|
-| **Registers** | ~1 cyc | per-thread | local variables |
-| **Shared memory** | ~20 cyc | per-block | `__shared__` (Level 5) |
-| **L1 / read-only cache** | ~30 cyc | per-SM | `__ldg` / `const __restrict__` |
-| **L2 cache** | ~200 cyc | whole GPU | (automatic) |
-| **Global (DRAM)** | ~400–800 cyc | whole GPU | `cudaMalloc` |
-| **Constant** | ~register (if uniform) | read-only, broadcast | `__constant__` |
+| Space | Latency | Capacity (RTX PRO 6000) | Scope | You control it via |
+|-------|---------|--------------------------|-------|--------------------|
+| **Registers** | ~1 cyc | 256 KB / SM | per-thread | local variables |
+| **Shared memory** | ~25 cyc | ≤ 128 KB / SM | per-block | `__shared__` (Level 5) |
+| **L1 / read-only cache** | ~30 cyc | shares the 128 KB / SM | per-SM | `__ldg` / `const __restrict__` |
+| **L2 cache** | ~250 cyc | on-chip, GPU-wide | whole GPU | (automatic) |
+| **Global (GDDR7)** | ~600 cyc | 96 GB @ 1792 GB/s | whole GPU | `cudaMalloc` |
+| **Constant** | ~register (if uniform) | 64 KB | read-only, broadcast | `__constant__` |
 
 ## The two ways to beat latency
 
@@ -52,17 +54,78 @@ opportunity to stage it in shared memory.
 ## The keystone project: tiled transpose
 
 At Level 2 you hit the wall: transpose can't be both read- and write-coalesced
-with thread mapping alone. The fix is the archetype of all GPU optimization:
+with thread mapping alone. The fix is the archetype of all GPU optimization —
+stage a tile in the scratchpad to convert a bad global access pattern into a good
+one:
 
-```
-read a TILE from global memory, coalesced  →  stash it in __shared__  →
-write it out transposed, also coalesced
-```
+<svg class="dojo-diagram" viewBox="0 0 760 150" role="img" aria-label="Read a tile coalesced from global into shared, then write it out transposed but still coalesced.">
+  <rect class="stroke-accent" x="20"  y="45" width="160" height="70" rx="8"/>
+  <text class="mono" x="100" y="38" text-anchor="middle">global IN</text>
+  <text class="mono fill-accent" x="100" y="86" text-anchor="middle">coalesced read</text>
+  <rect class="stroke-faint"  x="300" y="45" width="160" height="70" rx="8"/>
+  <text class="mono" x="380" y="38" text-anchor="middle">__shared__ tile</text>
+  <text class="mono" x="380" y="80" text-anchor="middle">transpose</text>
+  <text class="mono fill-accent" x="380" y="98" text-anchor="middle">happens here (~25 cyc)</text>
+  <rect class="stroke-accent" x="580" y="45" width="160" height="70" rx="8"/>
+  <text class="mono" x="660" y="38" text-anchor="middle">global OUT</text>
+  <text class="mono fill-accent" x="660" y="86" text-anchor="middle">coalesced write</text>
+  <g class="fill-accent">
+    <path d="M180,80 l112,0 m-10,-6 l10,6 l-10,6 z"/>
+    <path d="M460,80 l112,0 m-10,-6 l10,6 l-10,6 z"/>
+  </g>
+  <text class="mono" x="380" y="138" text-anchor="middle">both GDDR7 passes stay contiguous — the strided access is confined to fast shared memory</text>
+</svg>
 
-The strided access is confined to fast shared memory; both global-memory passes
-stay coalesced. You'll write this at Level 4/5, but the *idea* — "stage a tile in
-the scratchpad to convert a bad global access pattern into a good one" — is Level
-3's whole payload.
+Step through it one row at a time:
+
+<div data-dojo="tiled-transpose"></div>
+
+You'll write this at Level 4/5. The two kernels differ by one staging buffer — and
+that buffer is worth roughly 2× the bandwidth:
+
+=== "Naive transpose (strided)"
+
+    ```cpp { .annotate }
+    __global__ void transpose_naive(const float* in, float* out, int w, int h) {
+        int x = blockIdx.x * blockDim.x + threadIdx.x;
+        int y = blockIdx.y * blockDim.y + threadIdx.y;
+        if (x < w && y < h)
+            out[x * h + y] = in[y * w + x];   // (1)!
+    }
+    ```
+
+    1.  The read `in[y*w + x]` is coalesced (consecutive `x` → consecutive
+        addresses). But the write `out[x*h + y]` makes consecutive lanes jump by
+        `h` — **strided, uncoalesced.** You can't fix it by swapping x/y; that just
+        moves the strided access to the read. One side is always bad.
+
+=== "Tiled transpose (coalesced)"
+
+    ```cpp { .annotate }
+    __global__ void transpose_tiled(const float* in, float* out, int w, int h) {
+        __shared__ float tile[32][33];                 // (1)!
+        int x = blockIdx.x * 32 + threadIdx.x;
+        int y = blockIdx.y * 32 + threadIdx.y;
+        if (x < w && y < h)
+            tile[threadIdx.y][threadIdx.x] = in[y*w + x];  // (2)!
+        __syncthreads();                               // (3)!
+        x = blockIdx.y * 32 + threadIdx.x;             // (4)!
+        y = blockIdx.x * 32 + threadIdx.y;
+        if (x < h && y < w)
+            out[y*h + x] = tile[threadIdx.x][threadIdx.y];  // (5)!
+    }
+    ```
+
+    1.  `[32][33]` — the `+1` padding column makes shared-memory accesses skip the
+        32-way **bank conflict** the transpose would otherwise hit (Level 5).
+    2.  Read coalesced into shared — consecutive lanes, consecutive global
+        addresses.
+    3.  Barrier: the whole block must finish loading before anyone reads the tile
+        transposed. *Why here?* A lane reads a tile entry written by a **different**
+        lane — without the barrier that's a race.
+    4.  Recompute the output coordinates from the *swapped* block indices.
+    5.  Write coalesced to global; the transpose came from reading the shared tile
+        by column. The only strided access lives in ~25-cycle shared memory.
 
 ## Your reps
 

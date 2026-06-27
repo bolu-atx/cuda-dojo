@@ -1,10 +1,13 @@
 site_name: CUDA Dojo
 site_description: A level-by-level, Feynman-style interactive guide to CUDA.
+site_url: https://cuda-dojo.bolu.dev/
 docs_dir: docs
 site_dir: out/docs
 
 theme:
   name: material
+  logo: assets/mkdocs-logo.webp
+  favicon: assets/mkdocs-logo.webp
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -25,6 +28,8 @@ theme:
     - navigation.tracking
     - navigation.top
     - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
     - toc.follow
 
 extra_css:
@@ -35,6 +40,7 @@ markdown_extensions:
   - attr_list
   - md_in_html
   - footnotes
+  - pymdownx.details
   - toc:
       permalink: true
   - pymdownx.highlight:
