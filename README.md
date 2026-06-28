@@ -107,22 +107,31 @@ from the top-level `CMakeLists.txt`.
 
 ## The skill tree
 
-| Level | Project | Core concepts | Status |
-|------:|---------|---------------|:------:|
-| 1 | Vector add / SAXPY / reduction | thread indexing, launches, `cudaMalloc`/`Memcpy`, error checking | ✅ |
-| 2 | Image invert / threshold | 2D grids, thread→pixel mapping, boundary conditions | ✅ |
-| 3 | Matrix transpose | coalescing | ✅ |
-| 4 | Tiled transpose | shared memory, bank conflicts | ✅ |
-| 5 | Box filter / separable blur | halo loading, `__syncthreads()` | ✅ |
-| 6 | Reduction / histogram (warp) | `__shfl_sync`, warp primitives | ✅ |
-| 7 | Histogram | atomics, privatization | ⬜ |
-| 8 | Prefix scan | cooperative algorithms | ⬜ |
-| 9 | GEMM | tiling, register blocking | ⬜ |
-| 10 | FFT | multi-stage, cuFFT integration | ⬜ |
-| 11 | Video pipeline | streams, overlap, CUDA Graphs, orchestration patterns | ⬜ |
-| 12 | End-to-end image pipeline | production architecture | ⬜ |
+The numbering matches the [interactive guide](https://bolu.dev/cuda-dojo/). Status
+reflects the **code** under `levels/`: ✅ implemented, ⬜ planned, 📖 guide-only
+(conceptual, no kernel to write).
 
-Given an HPC/SIMD/OpenMP background, levels 1–2 should go fast; the real payoff
+| Level | The one idea | Project | Status |
+|------:|--------------|---------|:------:|
+| 0 | A GPU trades latency for throughput | GPU mental model | 📖 |
+| 1 | A kernel is one function run by a grid of threads | vector add / SAXPY / reduction | ✅ |
+| 2 | You design the thread→data mapping | invert / threshold / crop | ✅ |
+| 3 | CUDA has a logical machine and a physical machine | scope-mapping drills (grid/block/thread → SM/warp/lane) | ✅ |
+| 4 | Where data lives dominates speed | tiled transpose | ✅ |
+| 5 | Every kernel is memory- or compute-bound | optimize blur / Sobel (roofline) | ✅ |
+| 6 | A block is a team with a shared scratchpad | box filter / separable blur | ✅ |
+| 7 | Warp lanes cooperate through masks and registers | warp reduction / histogram | ✅ |
+| 8 | Synchronization is a scope decision | warp / block / stream idioms | ⬜ |
+| 9 | Don't hand-roll GEMM or FFT | cuBLAS / cuFFT pipeline | ⬜ |
+| 10 | Overlap copy and compute | video pipeline (streams) | ⬜ |
+| 11 | Real programs are kernel graphs | GEMM (multi-kernel) | ⬜ |
+| 12 | Nsight tells you the truth | profile a kernel: 20 ms → 1 ms | ⬜ |
+| 13 | Compose work into pipelines with streams, events, graphs | producer/consumer pipeline | ⬜ |
+| 14 | Production = pools + graphs + streams | end-to-end image pipeline | ⬜ |
+| 15 | Reformulate the algorithm for the hardware | your own | ⬜ |
+| 16 | Pipeline tiles inside one kernel | `cp.async` GEMM tile loop | ⬜ |
+
+Given an HPC/SIMD/OpenMP background, levels 0–2 should go fast; the real payoff
 is levels 4–10 (memory hierarchy, warp programming, Nsight-driven perf analysis,
 and stream/graph pipelines).
 
