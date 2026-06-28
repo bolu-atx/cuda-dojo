@@ -119,7 +119,7 @@ from the top-level `CMakeLists.txt`.
 | 8 | Prefix scan | cooperative algorithms | ⬜ |
 | 9 | GEMM | tiling, register blocking | ⬜ |
 | 10 | FFT | multi-stage, cuFFT integration | ⬜ |
-| 11 | Video pipeline | streams, overlap, CUDA Graphs | ⬜ |
+| 11 | Video pipeline | streams, overlap, CUDA Graphs, orchestration patterns | ⬜ |
 | 12 | End-to-end image pipeline | production architecture | ⬜ |
 
 Given an HPC/SIMD/OpenMP background, levels 1–2 should go fast; the real payoff
@@ -127,8 +127,9 @@ is levels 4–10 (memory hierarchy, warp programming, Nsight-driven perf analysi
 and stream/graph pipelines).
 
 The docs also include three advanced tracks that stay in the same Feynman style:
-architecture, libraries, and imaging/CV. Each one is built around prediction,
-interactive widgets, and concrete CUDA reps rather than reference-manual lists.
+architecture (now also covering multi-GPU scaling — NCCL/NVSHMEM, MIG), libraries,
+and imaging/CV. Each one is built around prediction, interactive widgets, and concrete
+CUDA reps rather than reference-manual lists.
 
 ## Profiling (from Level 4 onward)
 

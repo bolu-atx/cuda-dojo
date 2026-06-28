@@ -72,9 +72,10 @@ nav:
       - "Level 8 — Streams & Asynchrony": level08-streams.md
       - "Level 9 — Multi-Kernel Algorithms": level09-multi-kernel.md
       - "Level 10 — Production Optimization": level10-optimization.md
-      - "Level 11 — Advanced CUDA": level11-advanced.md
+      - "Level 11 — Orchestration Patterns": level11-orchestration.md
       - "Level 12 — Production Architecture": level12-architecture.md
       - "Level 13 — Algorithm Design": level13-algorithm-design.md
+      - "Level 14 — Intra-Kernel Pipeline": level14-tile-pipeline.md
   - Advanced Tracks:
       - "Architecture Deep Dive": track-architecture.md
       - "Library Field Guide": track-libraries.md

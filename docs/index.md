@@ -55,9 +55,10 @@ point: if you can only generate it, you don't yet understand it.
 | [8](level08-streams.md) | Overlap copy and compute | video pipeline |
 | [9](level09-multi-kernel.md) | Real programs are kernel graphs | GEMM |
 | [10](level10-optimization.md) | Nsight tells you the truth | 20 ms → 1 ms |
-| [11](level11-advanced.md) | Tensor cores, graphs, multi-GPU | — |
+| [11](level11-orchestration.md) | Compose work into pipelines with streams, events, graphs | producer/consumer pipeline |
 | [12](level12-architecture.md) | Production = pools + graphs + streams | end-to-end pipeline |
 | [13](level13-algorithm-design.md) | Reformulate the algorithm for the hardware | your own |
+| [14](level14-tile-pipeline.md) | Pipeline tiles inside one kernel | `cp.async` GEMM tile loop |
 
 ## Advanced tracks
 
@@ -66,7 +67,7 @@ use them once the core model is stable, or dip into one when a project demands i
 
 | Track | What it covers | When to study it |
 |------|----------------|------------------|
-| [Architecture Deep Dive](track-architecture.md) | SM anatomy, schedulers, issue slots, occupancy, cache behavior | when profiler metrics need a hardware explanation |
+| [Architecture Deep Dive](track-architecture.md) | SM anatomy, schedulers, issue slots, occupancy, cache behavior, tensor cores, multi-GPU (NCCL/NVSHMEM, MIG) | when profiler metrics need a hardware explanation, or you scale past one GPU |
 | [Library Field Guide](track-libraries.md) | CUB, Thrust, cuBLAS, cuFFT, cuRAND, cuSPARSE, cuSOLVER, NPP | before writing a kernel for a standard primitive |
 | [Imaging & Computer Vision](track-imaging.md) | stencils, separable filters, FFT convolution, image warps, production pipelines | for microscopy, cameras, medical imaging, and production CV |
 

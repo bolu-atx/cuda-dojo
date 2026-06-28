@@ -67,6 +67,25 @@ PTX and SASS are tools for explaining evidence. Use them after Nsight points to
 instruction mix, register pressure, spills, or unexpected memory operations. PTX
 shows compiler intent; SASS is what actually runs.
 
+## Scaling out: multiple GPUs
+
+One SM is a factory; one GPU is a building of them; a node is several buildings wired
+together. The bandwidth between them is the whole story — NVLink (GPU↔GPU, ~100s GB/s)
+is far faster than PCIe (host↔GPU, ~tens GB/s), so the design question is always *how
+little can cross the slow link.* The tools that manage that crossing:
+
+| Tool | What it is | When it's the answer |
+|------|------------|----------------------|
+| **NCCL** | Tuned collectives — all-reduce, broadcast, all-gather — that pick the right ring/tree over the actual NVLink/PCIe topology | Scaling DL training across GPUs/nodes. Use it; don't hand-roll cross-GPU reductions |
+| **NVSHMEM** | A PGAS model: a GPU reads/writes another GPU's memory directly, one-sided | Fine-grained, irregular cross-GPU access where collectives are too coarse |
+| **Peer-to-peer (P2P)** | One GPU dereferences another's memory when topology + permissions allow | Two GPUs on the same NVLink/PCIe root sharing buffers without a host bounce |
+| **MIG** | Partition one big GPU into isolated instances with their own SMs/memory | Multi-tenant *serving* — predictable isolation, not raw throughput |
+
+The mental model is the same one occupancy taught, one level up: a collective is "fast"
+only when it keeps the *interconnect* busy with useful bytes, the way a kernel keeps the
+SMs busy with eligible warps. Profile cross-GPU traffic in `nsys` before assuming a
+collective is the bottleneck.
+
 ## Your reps
 
 - Predict which slider setting in the widget will waste issue slots, then move it.
@@ -74,6 +93,8 @@ shows compiler intent; SASS is what actually runs.
   checking Nsight Compute.
 - For a stride experiment, predict memory transactions before looking at global
   load efficiency.
+- If you have ≥2 GPUs: run an **NCCL all-reduce** of a vector and reason about whether
+  it travels over NVLink or PCIe — predict the bandwidth before profiling it.
 
 ??? question "Self-check"
     A kernel has 35% occupancy and 95% of peak DRAM bandwidth. Should you chase

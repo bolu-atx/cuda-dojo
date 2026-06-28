@@ -52,7 +52,7 @@ Re-derive *bound by what?* first (Level 4) — the rest follows:
 
 - Instruction mix — are you doing expensive ops (`div`, `sin`) you could replace?
 - Use intrinsics (`__fdividef`, `--use_fast_math`) where precision allows.
-- Tensor cores for matmul-shaped work (Level 11).
+- Tensor cores for matmul-shaped work (see the [Architecture track](track-architecture.md)).
 
 **Latency-bound / low occupancy?** (ALUs idle, neither wall hit)
 
@@ -96,4 +96,4 @@ Re-derive *bound by what?* first (Level 4) — the rest follows:
     because there's enough latency hiding to saturate the bus. The only way faster
     is to move fewer bytes: more reuse/fusion to raise arithmetic intensity.)*
 
-→ Continue to [Level 11 — Advanced CUDA](level11-advanced.md)
+→ Continue to [Level 11 — Orchestration Patterns](level11-orchestration.md)

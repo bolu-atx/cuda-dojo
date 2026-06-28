@@ -28,7 +28,7 @@ and starting the next.
 ### 1. Launch overhead
 Each launch costs a few microseconds of CPU→GPU dispatch. Negligible for a 5 ms
 kernel; *dominant* for a 3 µs kernel called 10,000 times. Fixes: do more work per
-launch, batch, or amortize with **CUDA Graphs** (Level 11/12) which record a whole
+launch, batch, or amortize with **CUDA Graphs** (orchestration patterns, Level 11/12) which record a whole
 kernel sequence and replay it with one launch.
 
 ### 2. Intermediate DRAM traffic
