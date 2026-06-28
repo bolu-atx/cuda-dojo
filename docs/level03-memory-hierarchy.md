@@ -85,8 +85,9 @@ Step through it one row at a time:
 
 <div data-dojo="tiled-transpose"></div>
 
-You'll write this at Level 4/5. The two kernels differ by one staging buffer — and
-that buffer is worth roughly 2× the bandwidth:
+You write this **here** ([the exercises](#the-exercises-levelslevel03_memory_hierarchy)
+below). The two kernels differ by one staging buffer — and that buffer is worth
+roughly 2× the bandwidth:
 
 === "Naive transpose (strided)"
 
@@ -132,14 +133,41 @@ that buffer is worth roughly 2× the bandwidth:
     5.  Write coalesced to global; the transpose came from reading the shared tile
         by column. The only strided access lives in ~25-cycle shared memory.
 
-## Your reps
+## The exercises — `levels/level03_memory_hierarchy/`
 
-- **Tiled transpose** — first real use of `__shared__`; measure GB/s before and
-  after (it roughly doubles).
-- **Read-only convolution** — put the filter in `__constant__`, mark the image
-  `__restrict__`, and watch the read-only cache do work for free.
-- When you are ready for the hardware-level version of this model, read
-  [Architecture Deep Dive](track-architecture.md).
+Two problems, each shipped as a **complete baseline you can run** plus an
+**optimized version you write**. The point isn't just to make the optimized one
+pass — it's to *measure both* and watch where the bytes go.
+
+| File | Status | The payoff |
+|------|--------|------------|
+| `transpose_naive.cu` | ✅ **baseline** | The Level 2 wall, here to race against: coalesced read, strided write. |
+| `transpose_tiled.cu` | 📝 **your turn**, the keystone | Stage a `__shared__ float tile[32][33]` so *both* global passes are coalesced. The `+1` pad is the whole trick — without it a transposing access serializes 32-way on one bank. Predict the speedup before you run; expect ~2×. |
+| `blur3x3_global.cu` | ✅ **baseline** | A 3×3 box blur that re-reads all 9 neighbors from global — reuse left on the floor for L1 to catch by luck. |
+| `blur3x3_constant.cu` | 📝 **your turn** | Same result, but filter in `__constant__` (broadcast, no global traffic for weights) and inputs through `const __restrict__` (the read-only cache). The host already uploads the weights; you write the weighted sum. |
+
+What to get out of it:
+
+- **Reuse factor as a lens.** Transpose reuses each byte *once*, yet tiling still
+  wins ~2× — because shared memory converts a *strided* access into a coalesced
+  one, not because it adds reuse. The blur genuinely re-reads neighbors, so the
+  read-only path has reuse to exploit. Being able to say *which* mechanism is
+  paying off is the skill.
+- **The barrier is not magic dust.** In the tiled kernel, be able to answer *why*
+  `__syncthreads()` goes exactly where it does: a lane reads a tile entry a
+  **different** lane wrote, so the whole block must finish loading first.
+
+!!! tip "Prove it, don't trust it"
+    `make level03-test` checks every variant against a CPU reference at non-tile
+    sizes (e.g. 257×129, a 33×33 partial-tile case) so a missing bounds guard on
+    the halo or the edge tile actually fails. Then run `level03_demo`: it A/Bs
+    naive vs tiled transpose and the two blurs and prints GB/s for each. If tiled
+    isn't clearly faster than naive, your shared-memory access is still strided —
+    check the padding.
+
+When you are ready for the hardware-level version of this model (banks,
+schedulers, why the read-only cache exists), read
+[Architecture Deep Dive](track-architecture.md).
 
 ??? question "Self-check"
     Vector add gets ~0 benefit from shared memory but tiled transpose gets ~2×.

@@ -16,7 +16,7 @@ is **C++23**, device code is **C++20** (the highest CUDA reliably supports for
 
 CUDA Dojo is a hands-on **learning template**, not a library to depend on. The
 intended loop is: get your own copy, work a level until you can *explain* it, then
-climb the tree. The [interactive guide](https://cuda-dojo.bolu.dev/) teaches the
+climb the tree. The [interactive guide](https://bolu.dev/cuda-dojo/) teaches the
 mental model; the `levels/` code is where you prove you have it.
 
 1. **Get your own copy.** Click **Use this template** on GitHub (or fork) to start
@@ -27,7 +27,7 @@ mental model; the `levels/` code is where you prove you have it.
    make dep-check        # confirm your CUDA toolchain is ready
    ```
 2. **Read the level, then the code.** Open the matching page in the
-   [interactive guide](https://cuda-dojo.bolu.dev/) (or `make docs-serve` for a
+   [interactive guide](https://bolu.dev/cuda-dojo/) (or `make docs-serve` for a
    local copy), play with the widgets until the concept clicks, then read the
    kernels in `levels/levelNN_<topic>/`.
 3. **Build and prove it.** `make levelNN-test` compiles the level and runs it

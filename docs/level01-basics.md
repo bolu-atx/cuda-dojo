@@ -124,7 +124,7 @@ bridge* before a thread can read it, and results driven back:
   <path class="stroke-accent" stroke-width="2" marker-end="url(#dojoarrow)" d="M250,68 L505,68"/>
   <path class="stroke-warn"   stroke-width="2" marker-end="url(#dojoarrow2)" d="M505,108 L250,108"/>
   <text class="mono fill-accent" x="378" y="60" text-anchor="middle">cudaMemcpy …HostToDevice (1)</text>
-  <text class="mono" x="378" y="126" text-anchor="middle">cudaMemcpy …DeviceToHost (3)</text>
+  <text class="mono fill-warn" x="378" y="126" text-anchor="middle">cudaMemcpy …DeviceToHost (3)</text>
   <text class="mono" x="630" y="150" text-anchor="middle">kernel runs here (2)</text>
   <defs>
     <marker id="dojoarrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path class="fill-accent" d="M0,0 L6,3 L0,6 z"/></marker>

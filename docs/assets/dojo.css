@@ -273,6 +273,7 @@
 .dojo-diagram .label { font-size: 13px; }
 .dojo-diagram .mono { font-family: var(--md-code-font-family, monospace); font-size: 12px; }
 .dojo-diagram .fill-accent { fill: var(--dojo-accent); }
+.dojo-diagram .fill-warn { fill: var(--dojo-warn); }
 .dojo-diagram .fill-faint { fill: var(--dojo-diagram-faint-fill); }
 .dojo-diagram .stroke-accent { stroke: var(--dojo-accent); fill: none; }
 .dojo-diagram .stroke-faint { stroke: var(--dojo-diagram-faint-stroke); fill: none; }
