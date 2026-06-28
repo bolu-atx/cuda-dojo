@@ -14,3 +14,7 @@ compile_commands.json
 *.nsys-rep
 *.qdrep
 *.sqlite
+
+# Tutorial author style guide — local guidance, not published or shipped
+docs/CLAUDE.md
+levels/CLAUDE.md

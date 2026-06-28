@@ -26,7 +26,10 @@
 //     branch.
 //   - Shared memory has 32 banks; a naive column access (tile[ty][tx] read as a
 //     column) serializes 32-way. Padding the inner dimension (tile[N][N+1])
-//     skews the layout — same conflict lesson as Level 4.
+//     skews the layout — same conflict lesson as Level 4. Padding is the first
+//     tool, not the only one: swizzle_demo.cu (a stretch) removes the same
+//     conflict with XOR indexing (tile[row][col ^ row]) and no wasted memory —
+//     the layout GEMM needs at Level 9.
 //
 // Cliffhanger: a tiled box filter still runs the same __syncthreads() three
 // times in the block reduction's tail — but the last 32 threads are a single
