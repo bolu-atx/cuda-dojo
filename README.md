@@ -110,11 +110,11 @@ from the top-level `CMakeLists.txt`.
 | Level | Project | Core concepts | Status |
 |------:|---------|---------------|:------:|
 | 1 | Vector add / SAXPY / reduction | thread indexing, launches, `cudaMalloc`/`Memcpy`, error checking | ✅ |
-| 2 | Image invert / threshold | 2D grids, thread→pixel mapping, boundary conditions | ⬜ |
-| 3 | Matrix transpose | coalescing | ⬜ |
-| 4 | Tiled transpose | shared memory, bank conflicts | ⬜ |
-| 5 | Convolution | halo loading, `__syncthreads()` | ⬜ |
-| 6 | Reduction (warp) | `__shfl_sync`, warp primitives | ⬜ |
+| 2 | Image invert / threshold | 2D grids, thread→pixel mapping, boundary conditions | ✅ |
+| 3 | Matrix transpose | coalescing | ✅ |
+| 4 | Tiled transpose | shared memory, bank conflicts | ✅ |
+| 5 | Box filter / separable blur | halo loading, `__syncthreads()` | ✅ |
+| 6 | Reduction / histogram (warp) | `__shfl_sync`, warp primitives | ✅ |
 | 7 | Histogram | atomics, privatization | ⬜ |
 | 8 | Prefix scan | cooperative algorithms | ⬜ |
 | 9 | GEMM | tiling, register blocking | ⬜ |

@@ -68,9 +68,11 @@ fast histograms and stream compaction.
 
 | Project | Intrinsic focus |
 |---------|-----------------|
-| **warp reduction** | `__shfl_down_sync` — then benchmark vs the shared-mem version |
-| **warp prefix sum** | `__shfl_up_sync` (an inclusive scan in log₂32 = 5 steps) |
-| **warp histogram** | `__ballot_sync` + warp-aggregated `atomicAdd` |
+| **warp reduction** (worked) | `__shfl_down_sync` — then benchmark vs the shared-mem version |
+| **warp histogram** (your turn) | `__ballot_sync` + warp-aggregated `atomicAdd` |
+
+Stretch rep: a **warp prefix sum** with `__shfl_up_sync` — an inclusive scan in
+log₂32 = 5 steps.
 
 ??? question "Self-check"
     Why does a warp shuffle need no `__syncthreads()` but a block-wide reduction

@@ -70,11 +70,12 @@ the **integral image**. Master the rhythm once and these all fall out.
 
 | Project | New skill |
 |---------|-----------|
-| **box filter** | tile + halo loading, the load/sync/compute rhythm |
-| **separable convolution** | two passes (row, col) — half the work |
-| **tiled transpose** (revisit) | shared memory to fix coalescing, with padding |
-| **local histogram** | per-block privatized bins → bridge to Level 7 |
-| **block prefix scan** | up-sweep / down-sweep over shared memory |
+| **box filter** (worked) | tile + halo loading, the load/sync/compute rhythm |
+| **separable blur** (your turn) | two passes (row, col) — half the work |
+
+Stretch reps once those land: revisit the **tiled transpose** with shared-memory
+padding, a per-block **local histogram** (privatized bins → bridge to Level 7),
+and a **block prefix scan** (up-sweep / down-sweep over shared memory).
 
 ??? question "Self-check"
     Your tiled box filter loads a 16×16 output tile with a 1-pixel halo. How big
