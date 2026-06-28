@@ -16,5 +16,6 @@ compile_commands.json
 *.sqlite
 
 # Tutorial author style guide — local guidance, not published or shipped
+docs/AGENTS.md
 docs/CLAUDE.md
 levels/CLAUDE.md

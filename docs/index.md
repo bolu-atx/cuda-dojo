@@ -38,7 +38,7 @@ point: if you can only generate it, you don't yet understand it.
 2. **Build intuition.** We reason from CPUs, SIMD, and physics — no magic.
 3. **Play.** Move the sliders. Try to break your own mental model.
 4. **Do the reps.** Each level maps to a project in the code repo.
-5. **Measure.** From Level 4 on, you stop guessing and start profiling.
+5. **Measure.** From Level 5 on, you stop guessing and start profiling.
 
 ## The skill tree
 
@@ -47,18 +47,20 @@ point: if you can only generate it, you don't yet understand it.
 | [0](level00-mental-model.md) | A GPU trades latency for throughput | vector add / SAXPY / reduction |
 | [1](level01-basics.md) | A kernel is one function run by a grid of threads | invert / threshold |
 | [2](level02-thread-mapping.md) | You design the thread→data mapping | transpose / crop / resize |
-| [3](level03-memory-hierarchy.md) | Where data lives dominates speed | tiled transpose |
-| [4](level04-performance.md) | Every kernel is memory- or compute-bound | optimize blur / Sobel |
-| [5](level05-shared-memory.md) | A block is a team with a shared scratchpad | box filter / separable blur |
-| [6](level06-warps.md) | 32 threads can talk without memory | warp reduction / histogram |
-| [7](level07-libraries.md) | Don't hand-roll GEMM or FFT | cuBLAS / cuFFT pipeline |
-| [8](level08-streams.md) | Overlap copy and compute | video pipeline |
-| [9](level09-multi-kernel.md) | Real programs are kernel graphs | GEMM |
-| [10](level10-optimization.md) | Nsight tells you the truth | 20 ms → 1 ms |
-| [11](level11-orchestration.md) | Compose work into pipelines with streams, events, graphs | producer/consumer pipeline |
-| [12](level12-architecture.md) | Production = pools + graphs + streams | end-to-end pipeline |
-| [13](level13-algorithm-design.md) | Reformulate the algorithm for the hardware | your own |
-| [14](level14-tile-pipeline.md) | Pipeline tiles inside one kernel | `cp.async` GEMM tile loop |
+| [3](level03-execution-model.md) | CUDA has a logical machine and a physical machine | scope mapping drills |
+| [4](level04-memory-hierarchy.md) | Where data lives dominates speed | tiled transpose |
+| [5](level05-performance.md) | Every kernel is memory- or compute-bound | optimize blur / Sobel |
+| [6](level06-shared-memory.md) | A block is a team with a shared scratchpad | box filter / separable blur |
+| [7](level07-warps.md) | Warp lanes cooperate through masks and registers | warp reduction / histogram |
+| [8](level08-synchronization-scopes.md) | Synchronization is a scope decision | warp/block/stream idioms |
+| [9](level09-libraries.md) | Don't hand-roll GEMM or FFT | cuBLAS / cuFFT pipeline |
+| [10](level10-streams.md) | Overlap copy and compute | video pipeline |
+| [11](level11-multi-kernel.md) | Real programs are kernel graphs | GEMM |
+| [12](level12-optimization.md) | Nsight tells you the truth | 20 ms → 1 ms |
+| [13](level13-orchestration.md) | Compose work into pipelines with streams, events, graphs | producer/consumer pipeline |
+| [14](level14-architecture.md) | Production = pools + graphs + streams | end-to-end pipeline |
+| [15](level15-algorithm-design.md) | Reformulate the algorithm for the hardware | your own |
+| [16](level16-tile-pipeline.md) | Pipeline tiles inside one kernel | `cp.async` GEMM tile loop |
 
 ## Advanced tracks
 

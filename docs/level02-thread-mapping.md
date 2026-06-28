@@ -103,7 +103,7 @@ threads:
 
 Stride 1 (threads map to consecutive columns) ⇒ ~full efficiency. Any larger
 stride (threads map down a column, or you index `x*height + y`) wastes bus
-bandwidth. We'll make this quantitative at [Level 4](level04-performance.md);
+bandwidth. We'll make this quantitative at [Level 5](level05-performance.md);
 for now just **always make `threadIdx.x` run along contiguous memory.**
 
 ## The wider menu
@@ -111,7 +111,7 @@ for now just **always make `threadIdx.x` run along contiguous memory.**
 | Project | What it teaches |
 |---------|-----------------|
 | **image invert / threshold / brightness** | the 2D launch + boundary guard, trivial math |
-| **pixel histogram** | a first scatter (sets up Level 7 atomics) |
+| **pixel histogram** | a first scatter (sets up Level 9 atomics) |
 | **crop** | output index ≠ input index; offset arithmetic |
 | **transpose** | output `(x,y)` reads input `(y,x)` — the canonical coalescing trap |
 | **rotation / resize** | non-integer source coords → gather + interpolation |
@@ -132,7 +132,7 @@ and the tests are the spec. Fill them in until `make level02-test` is green.
 **Transpose is the keystone.** A naive transpose reads coalesced but *writes*
 strided (or vice versa). You cannot win with thread mapping alone — which is
 exactly the cliffhanger that forces you into the [memory
-hierarchy](level03-memory-hierarchy.md) and shared-memory tiling at Level 3.
+hierarchy](level04-memory-hierarchy.md) and shared-memory tiling at Level 4.
 
 !!! tip "Prove it, don't trust it"
     `make level02-test` runs each kernel against a CPU reference at awkward sizes
@@ -147,4 +147,7 @@ hierarchy](level03-memory-hierarchy.md) and shared-memory tiling at Level 3.
     `block.x = 32` a deliberate choice? *(60×135 = 8100 blocks; 32 = warp size,
     so each warp's 32 lanes span one contiguous run of 32 pixels → coalesced.)*
 
-→ Continue to [Level 3 — Memory Hierarchy](level03-memory-hierarchy.md)
+You've mapped threads onto data. The next question is *where those threads
+actually run* — and why that, not your indexing, decides which ones can cooperate.
+
+→ Continue to [Level 3 — Logical vs Physical Execution](level03-execution-model.md)

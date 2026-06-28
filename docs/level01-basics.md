@@ -79,7 +79,7 @@ the thread that owns element 19:
 
 !!! tip "Why blocks at all? Why not one flat array of threads?"
     A **block** is scheduled onto a single SM, and threads in a block can share a
-    scratchpad and synchronize (Level 5). Blocks are the unit of cooperation;
+    scratchpad and synchronize (Level 6). Blocks are the unit of cooperation;
     the grid is the unit of scale. Blocks can't (cheaply) talk to each other —
     that constraint is what makes GPUs scalable across SM counts.
 
@@ -197,7 +197,7 @@ step, finishing in log₂N instead of N. Step through it:
 
 The repo's `reduce_sum` does exactly this inside each block (shared memory +
 `__syncthreads()`), then sums the per-block partials. We'll rebuild it properly
-with warp primitives at [Level 6](level06-warps.md).
+with warp primitives at [Level 7](level07-warps.md).
 
 ## Your reps
 
@@ -216,6 +216,6 @@ with warp primitives at [Level 6](level06-warps.md).
        grid-stride or `ceil_div` sizing matters.)*
     2. Why is `cudaMemcpy` after the launch safe without an explicit sync?
        *(Default-stream copies wait for prior default-stream work — the copy-out
-       implicitly synchronizes. Not true once you use streams: Level 8.)*
+       implicitly synchronizes. Not true once you use streams: Level 10.)*
 
 → Continue to [Level 2 — Thread Mapping](level02-thread-mapping.md)

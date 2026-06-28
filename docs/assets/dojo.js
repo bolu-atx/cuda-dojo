@@ -947,6 +947,471 @@
     return draw;
   }
 
+  // =======================================================================
+  // execution-model — logical grid/block/thread vs physical SM/warp/lane
+  // =======================================================================
+  function executionModel(root) {
+    shell(root, "Two machines: logical grid → physical SMs",
+      "You write the left machine; the runtime schedules it onto the right. Pick a block and trace it: it lands on exactly one SM and splits into warps of 32 lanes. (The block→SM mapping shown is illustrative — the real choice is the runtime's and isn't guaranteed.)");
+    const W = 720, H = 280;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let blocks = 8, sms = 4, tpb = 128, sel = 3;
+
+    slider(cs, "blocks in grid", 1, 12, blocks, 1, v => { blocks = v; clampSel(); sSel.max = blocks - 1; draw(); });
+    slider(cs, "SMs on the GPU", 1, 6, sms, 1, v => { sms = v; draw(); });
+    slider(cs, "threads / block", 32, 256, tpb, 32, v => { tpb = v; draw(); });
+    const sSel = slider(cs, "highlight block", 0, blocks - 1, sel, 1, v => { sel = v; draw(); });
+
+    function clampSel() { if (sel > blocks - 1) { sel = blocks - 1; sSel.value = sel; } }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), faint = C.faint(), cool = C.cool();
+
+      ctx.textAlign = "left";
+      ctx.font = "bold 12px monospace";
+      ctx.fillStyle = ink;
+      ctx.fillText("LOGICAL — you write", 10, 16);
+      ctx.fillText("PHYSICAL — runtime schedules", 372, 16);
+
+      ctx.strokeStyle = faint;
+      ctx.beginPath(); ctx.moveTo(360, 24); ctx.lineTo(360, 200); ctx.stroke();
+
+      // ---- left: the grid of blocks you launched ----
+      const cols = 4, rows = Math.ceil(blocks / cols);
+      const gx = 10, gy = 30, gw = 330, gh = 165;
+      const cw = (gw - (cols - 1) * 8) / cols;
+      const chh = Math.min(40, (gh - (rows - 1) * 8) / rows);
+      for (let b = 0; b < blocks; b++) {
+        const r = Math.floor(b / cols), c = b % cols;
+        const x = gx + c * (cw + 8), y = gy + r * (chh + 8);
+        ctx.fillStyle = b === sel ? accent : faint;
+        ctx.fillRect(x, y, cw, chh);
+        ctx.fillStyle = b === sel ? "#0b1500" : ink;
+        ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText("block " + b, x + cw / 2, y + chh / 2 + 3);
+      }
+
+      // ---- right: SM columns, blocks assigned round-robin ----
+      const rx = 372, ry = 30, rw = W - rx - 10, rh = 165;
+      const smw = (rw - (sms - 1) * 6) / sms;
+      for (let s = 0; s < sms; s++) {
+        const x = rx + s * (smw + 6);
+        ctx.fillStyle = "rgba(128,128,128,0.10)";
+        ctx.fillRect(x, ry, smw, rh);
+        ctx.strokeStyle = faint; ctx.strokeRect(x, ry, smw, rh);
+        ctx.fillStyle = ink; ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText("SM " + s, x + smw / 2, ry + rh + 12);
+        let slot = 0;
+        for (let b = s; b < blocks; b += sms) {
+          const by = ry + 6 + slot * 24;
+          if (by + 18 > ry + rh) break;
+          ctx.fillStyle = b === sel ? accent : "rgba(118,185,0,0.18)";
+          ctx.fillRect(x + 4, by, smw - 8, 18);
+          ctx.fillStyle = b === sel ? "#0b1500" : ink;
+          ctx.font = "9px monospace"; ctx.textAlign = "center";
+          ctx.fillText("blk " + b, x + smw / 2, by + 12);
+          slot++;
+        }
+      }
+
+      // ---- bottom: the selected block decomposed into warps ----
+      const warps = Math.ceil(tpb / 32);
+      const wy = 218, wh = 28, wxx = 10, ww = W - 20;
+      ctx.fillStyle = ink; ctx.font = "11px monospace"; ctx.textAlign = "left";
+      ctx.fillText("block " + sel + " → " + warps + " warps of 32 lanes:", wxx, wy - 6);
+      const segw = (ww - (warps - 1) * 4) / warps;
+      for (let w = 0; w < warps; w++) {
+        const x = wxx + w * (segw + 4);
+        ctx.fillStyle = "rgba(58,142,224,0.30)";
+        ctx.fillRect(x, wy, segw, wh);
+        ctx.strokeStyle = cool; ctx.strokeRect(x, wy, segw, wh);
+        ctx.fillStyle = ink; ctx.font = "10px monospace"; ctx.textAlign = "center";
+        if (segw > 28) ctx.fillText("warp " + w, x + segw / 2, wy + wh / 2 + 3);
+      }
+
+      out.innerHTML = "block <b>" + sel + "</b> → <b>SM " + (sel % sms) +
+        "</b> (one SM, never split) — decomposes into <b>" + warps +
+        "</b> warps × 32 = <b>" + (warps * 32) + "</b> lanes. You chose " + blocks +
+        " blocks and " + tpb + " threads/block; the runtime chose the SM.";
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // block-to-sm — a block lands wholly on one SM; its resources are per-block
+  // =======================================================================
+  function blockToSm(root) {
+    shell(root, "A block never spans two SMs",
+      "The runtime drops each block onto exactly one SM for its whole life. That physical fact is why __shared__ and __syncthreads() are per-block — and why there is no __syncblocks(). Pick a block and see where it lands.");
+    const W = 720, H = 230;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let blocks = 8, sms = 4, sel = 2;
+
+    slider(cs, "blocks in grid", 1, 16, blocks, 1, v => { blocks = v; clampSel(); draw(); });
+    slider(cs, "SMs on the GPU", 1, 6, sms, 1, v => { sms = v; draw(); });
+    const sSel = slider(cs, "inspect block", 0, blocks - 1, sel, 1, v => { sel = v; draw(); });
+
+    function clampSel() {
+      sSel.max = blocks - 1;
+      if (sel > blocks - 1) { sel = blocks - 1; sSel.value = sel; }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), faint = C.faint(), cool = C.cool();
+      const home = sel % sms;   // illustrative round-robin home SM
+
+      // ---- the SM strip; blocks stacked into their home SM ----
+      ctx.fillStyle = ink; ctx.font = "bold 12px monospace"; ctx.textAlign = "left";
+      ctx.fillText(sms + " SMs — each block occupies exactly one column", 10, 16);
+      const ry = 28, rh = 150, rx = 10, rw = W - 20;
+      const smw = (rw - (sms - 1) * 8) / sms;
+      for (let s = 0; s < sms; s++) {
+        const x = rx + s * (smw + 8);
+        ctx.fillStyle = s === home ? "rgba(118,185,0,0.10)" : "rgba(128,128,128,0.08)";
+        ctx.fillRect(x, ry, smw, rh);
+        ctx.strokeStyle = s === home ? accent : faint;
+        ctx.lineWidth = s === home ? 2 : 1;
+        ctx.strokeRect(x, ry, smw, rh);
+        ctx.fillStyle = ink; ctx.font = "11px monospace"; ctx.textAlign = "center";
+        ctx.fillText("SM " + s, x + smw / 2, ry + rh + 16);
+        let slot = 0;
+        for (let b = s; b < blocks; b += sms) {
+          const by = ry + 8 + slot * 26;
+          if (by + 20 > ry + rh) break;
+          ctx.fillStyle = b === sel ? accent : "rgba(118,185,0,0.18)";
+          ctx.fillRect(x + 6, by, smw - 12, 20);
+          ctx.fillStyle = b === sel ? "#0b1500" : ink;
+          ctx.font = "10px monospace";
+          ctx.fillText("block " + b + (b === sel ? "  ·shared·" : ""), x + smw / 2, by + 14);
+          slot++;
+        }
+      }
+
+      out.innerHTML = "block <b>" + sel + "</b> → <b>SM " + home +
+        "</b> (one SM, never split). Its <b>__shared__</b> is a private allocation on that SM; " +
+        "<b>__syncthreads()</b> waits only block " + sel + "'s threads. A different block is a different " +
+        "allocation even on the same SM — so crossing blocks needs a <span class='warn'>kernel boundary</span>, " +
+        "not a barrier. (Mapping is illustrative; the real choice is the runtime's.)";
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // warp-lanes — threadIdx.x → warp id (>>5) and lane id (&31)
+  // =======================================================================
+  function warpLanes(root) {
+    shell(root, "threadIdx.x → warp id and lane id",
+      "A block is sliced into warps of 32 consecutive threads. The split is pure bit math: warp = threadIdx.x >> 5, lane = threadIdx.x & 31. Drag the thread and watch which warp and lane it falls in.");
+    const W = 720, H = 170;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let dim = 128, tid = 70;
+
+    slider(cs, "blockDim.x", 32, 256, dim, 32, v => { dim = v; if (tid > dim - 1) { tid = dim - 1; sT.value = tid; } sT.max = dim - 1; draw(); });
+    const sT = slider(cs, "threadIdx.x", 0, dim - 1, tid, 1, v => { tid = v; draw(); });
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), cool = C.cool(), faint = C.faint();
+      const warps = Math.ceil(dim / 32);
+      const selWarp = tid >> 5, selLane = tid & 31;
+
+      // ---- warp strip: each warp a band of 32 lanes ----
+      ctx.fillStyle = ink; ctx.font = "11px monospace"; ctx.textAlign = "left";
+      ctx.fillText(dim + " threads → " + warps + " warps of 32 lanes", 10, 16);
+      const gx = 10, gy = 28, gw = W - 20, lane = gw / 32, wh = 22, gap = 6;
+      for (let w = 0; w < warps; w++) {
+        const y = gy + w * (wh + gap);
+        if (y + wh > H - 24) break;
+        for (let l = 0; l < 32; l++) {
+          const here = (w === selWarp && l === selLane);
+          ctx.fillStyle = here ? accent : (w === selWarp ? "rgba(58,142,224,0.25)" : faint);
+          ctx.fillRect(gx + l * lane, y, lane - 1, wh);
+        }
+        ctx.strokeStyle = w === selWarp ? cool : faint;
+        ctx.lineWidth = w === selWarp ? 2 : 1;
+        ctx.strokeRect(gx, y, gw, wh);
+        ctx.fillStyle = ink; ctx.font = "9px monospace"; ctx.textAlign = "left";
+        ctx.fillText("warp " + w, gx + 3, y - 1);
+      }
+
+      const bits = (tid >>> 0).toString(2).padStart(8, "0");
+      const hi = bits.slice(0, bits.length - 5), lo = bits.slice(bits.length - 5);
+      out.innerHTML = "threadIdx.x = <b>" + tid + "</b> = 0b" + hi + "<u>" + lo + "</u> → " +
+        "warp = " + tid + " >> 5 = <b>" + selWarp + "</b>, lane = " + tid + " & 31 = <b>" + selLane + "</b>. " +
+        "The high bits pick the warp, the low 5 bits pick the lane — consecutive threads are consecutive lanes, which is exactly why mapping threadIdx.x to the contiguous axis coalesces.";
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // sync-mask — toggle lane predicates, watch the __ballot_sync mask change
+  // =======================================================================
+  function syncMask(root) {
+    shell(root, "Masks: the set of participating lanes",
+      "A mask is one bit per lane — bit i set means 'lane i is in this _sync op'. Click lanes to toggle their predicate and watch the 32-bit mask __ballot_sync would produce.");
+    const W = 720, H = 150;
+    const { ctx } = canvas(root, W, H);
+    const cv = root.querySelector("canvas");
+    const cs = controls(root);
+    const out = readout(root);
+    const active = Array.from({ length: 32 }, () => true);
+
+    button(cs, "all lanes", () => { active.fill(true); draw(); });
+    button(cs, "even lanes", () => { for (let i = 0; i < 32; i++) active[i] = (i % 2 === 0); draw(); });
+    button(cs, "lower half", () => { for (let i = 0; i < 32; i++) active[i] = (i < 16); draw(); });
+
+    const gx = 10, gy = 40, lane = (W - 20) / 32, lh = 40;
+    cv.addEventListener("click", e => {
+      const lx = (e.offsetX / cv.clientWidth) * W;
+      const ly = (e.offsetY / cv.clientHeight) * H;
+      const i = Math.floor((lx - gx) / lane);
+      if (i >= 0 && i < 32 && ly >= gy && ly <= gy + lh) { active[i] = !active[i]; draw(); }
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), faint = C.faint();
+      ctx.fillStyle = ink; ctx.font = "11px monospace"; ctx.textAlign = "left";
+      ctx.fillText("32 lanes — click to toggle each lane's predicate", 10, 22);
+
+      let mask = 0, count = 0;
+      for (let i = 0; i < 32; i++) {
+        if (active[i]) { mask |= (1 << i); count++; }
+        ctx.fillStyle = active[i] ? accent : faint;
+        ctx.fillRect(gx + i * lane, gy, lane - 1.5, lh);
+        if (lane > 14) {
+          ctx.fillStyle = active[i] ? "#0b1500" : ink;
+          ctx.font = "9px monospace"; ctx.textAlign = "center";
+          ctx.fillText(i, gx + i * lane + lane / 2, gy + lh / 2 + 3);
+        }
+      }
+      const hex = "0x" + (mask >>> 0).toString(16).padStart(8, "0");
+      ctx.fillStyle = ink; ctx.font = "13px monospace"; ctx.textAlign = "left";
+      ctx.fillText("mask = " + hex, 10, gy + lh + 28);
+
+      out.innerHTML = "__ballot_sync(0xffffffff, pred) = <b>" + hex + "</b> — <b>" + count +
+        "</b> participating lane" + (count === 1 ? "" : "s") + ". " + (count === 32
+          ? "<span class='good'>Whole warp converged → 0xffffffff is honest.</span>"
+          : "<span class='warn'>Only some lanes — passing 0xffffffff here would name absent lanes and read garbage. Derive the mask before the branch.</span>");
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // cross-warp-race — __syncwarp() in warp 0 does nothing for warp 1
+  // =======================================================================
+  function crossWarpRace(root) {
+    shell(root, "Warp-local sync is not block-wide",
+      "Warp 0 writes shared memory and calls a barrier; warp 1 reads it. Slide warp 1's head start and toggle the barrier. Predict: which barrier actually makes warp 1 wait for warp 0's write?");
+    const W = 720, H = 180;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let skew = 4, blockWide = false;
+
+    slider(cs, "warp 1 head start", 0, 10, skew, 1, v => { skew = v; draw(); });
+    const tg = button(cs, "barrier: __syncwarp()", () => {
+      blockWide = !blockWide;
+      tg.textContent = blockWide ? "barrier: __syncthreads()" : "barrier: __syncwarp()";
+      tg.classList.toggle("dojo-btn--warn", false);
+      draw();
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), warn = C.warn(), cool = C.cool(), faint = C.faint();
+      const px = 42, t0 = 120;
+      // timeline: warp 0 writes at writeT; warp 1 reads at readT.
+      const writeT = 5;                 // warp 0 reaches the write+barrier here
+      const readBase = 3 - skew * 0.4;  // warp 1's natural read time, earlier as skew grows
+      // __syncthreads() forces warp 1 to wait until every warp passes the barrier.
+      const readT = blockWide ? Math.max(readBase, writeT + 1) : readBase;
+      const race = readT < writeT;
+
+      function lane(y, label, col) {
+        ctx.strokeStyle = faint; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(t0, y); ctx.lineTo(W - 10, y); ctx.stroke();
+        ctx.fillStyle = ink; ctx.font = "11px monospace"; ctx.textAlign = "right";
+        ctx.fillText(label, t0 - 8, y + 4);
+      }
+      lane(60, "warp 0", accent);
+      lane(120, "warp 1", cool);
+
+      // warp 0 write/barrier marker
+      const wx = t0 + writeT * px;
+      ctx.fillStyle = accent; ctx.fillRect(wx - 5, 50, 10, 20);
+      ctx.fillStyle = ink; ctx.font = "10px monospace"; ctx.textAlign = "center";
+      ctx.fillText("write smem", wx, 44);
+      // barrier line
+      ctx.strokeStyle = blockWide ? accent : warn;
+      ctx.setLineDash([4, 3]); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(wx, 40); ctx.lineTo(wx, blockWide ? 130 : 75); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // warp 1 read marker
+      const rx = t0 + readT * px;
+      ctx.fillStyle = race ? warn : cool; ctx.fillRect(rx - 5, 110, 10, 20);
+      ctx.fillStyle = ink; ctx.textAlign = "center";
+      ctx.fillText("read smem", rx, 146);
+
+      out.innerHTML = "barrier = <b>" + (blockWide ? "__syncthreads()" : "__syncwarp()") + "</b> — " +
+        (blockWide
+          ? "<span class='good'>warp 1 is forced past the write before it reads. Safe: the barrier spans the whole block.</span>"
+          : (race
+            ? "<span class='warn'>RACE: warp 1 read before warp 0 wrote. __syncwarp() in warp 0 never made warp 1 wait — it orders one warp only.</span>"
+            : "warp 1 happens to read after the write here, but that's luck, not ordering. __syncwarp() gives warp 1 no guarantee — climb to __syncthreads()."));
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // sync-scope — the decision ladder: smallest scope that makes the reader wait
+  // =======================================================================
+  function syncScope(root) {
+    shell(root, "The synchronization ladder",
+      "One question picks every primitive: who must see whose writes before continuing? Choose where the producer and consumer sit, and the smallest correct scope lights up. Climb only as high as the answer forces.");
+    const W = 720, H = 280;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    const rungs = [
+      ["__syncwarp(mask)", "named lanes in one warp"],
+      ["__syncthreads()", "all threads in one block"],
+      ["tile.sync()", "threads in a programmer-defined tile"],
+      ["grid.sync()", "all blocks — cooperative launch only"],
+      ["kernel boundary", "all blocks of the previous kernel"],
+      ["event + StreamWaitEvent", "one queue waits for a point in another"],
+      ["cudaStreamSynchronize", "the host thread waits"],
+    ];
+    // each scenario maps to the smallest correct rung index
+    const scen = [
+      ["lanes in one warp", 0],
+      ["warps in one block", 1],
+      ["a sub-block tile", 2],
+      ["blocks, no kernel end", 3],
+      ["block → block (relaunch)", 4],
+      ["stream → stream", 5],
+      ["device → host (CPU reads)", 6],
+    ];
+    let sel = 1;
+    slider(cs, "producer → consumer are…", 0, scen.length - 1, sel, 1, v => { sel = v; draw(); });
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), faint = C.faint();
+      const need = scen[sel][1];
+      ctx.fillStyle = ink; ctx.font = "12px monospace"; ctx.textAlign = "left";
+      ctx.fillText("scenario: " + scen[sel][0], 10, 18);
+
+      const x = 14, w = W - 28, y0 = 30, rh = 30, gap = 4;
+      rungs.forEach((r, i) => {
+        const y = y0 + i * (rh + gap);
+        const on = i === need;
+        const tooSmall = i < need;
+        ctx.fillStyle = on ? accent : (tooSmall ? "rgba(224,99,58,0.18)" : "rgba(128,128,128,0.12)");
+        ctx.fillRect(x, y, w, rh);
+        ctx.strokeStyle = on ? accent : faint; ctx.lineWidth = on ? 2 : 1;
+        ctx.strokeRect(x, y, w, rh);
+        ctx.fillStyle = on ? "#0b1500" : ink;
+        ctx.font = (on ? "bold " : "") + "12px monospace"; ctx.textAlign = "left";
+        ctx.fillText(r[0], x + 10, y + rh / 2 + 4);
+        ctx.font = "11px monospace"; ctx.textAlign = "right";
+        ctx.fillStyle = on ? "#0b1500" : ink;
+        ctx.fillText(r[1], x + w - 10, y + rh / 2 + 4);
+      });
+
+      out.innerHTML = "smallest correct scope: <b>" + rungs[need][0] + "</b> — " + rungs[need][1] +
+        ". <span class='warn'>Red rungs below are too small to order this handoff</span>; rungs above work but over-serialize. Pick the smallest that makes the right reader wait.";
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // stream-event-dependency — two stream queues linked by an event
+  // =======================================================================
+  function streamEventDependency(root) {
+    shell(root, "Ordering two streams with an event",
+      "streamB's kernel must not start until streamA's kernel finishes — without stalling the CPU. cudaEventRecord marks a point in A; cudaStreamWaitEvent makes B wait for it. Drag A's length and watch B's start slide.");
+    const W = 720, H = 200;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let aLen = 6, bQueued = 2, linked = true;
+
+    slider(cs, "kernelA length", 2, 12, aLen, 1, v => { aLen = v; draw(); });
+    slider(cs, "B's own work before wait", 0, 6, bQueued, 1, v => { bQueued = v; draw(); });
+    const tg = button(cs, "dependency: ON (event)", () => {
+      linked = !linked;
+      tg.textContent = linked ? "dependency: ON (event)" : "dependency: OFF (race)";
+      tg.classList.toggle("dojo-btn--warn", !linked);
+      draw();
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), cool = C.cool(), warn = C.warn(), faint = C.faint();
+      const t0 = 90, px = 44;
+      function lane(y, label) {
+        ctx.strokeStyle = faint; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(t0, y + 12); ctx.lineTo(W - 10, y + 12); ctx.stroke();
+        ctx.fillStyle = ink; ctx.font = "11px monospace"; ctx.textAlign = "right";
+        ctx.fillText(label, t0 - 8, y + 16);
+      }
+      function bar(x, y, w, label, col) {
+        ctx.fillStyle = col; ctx.fillRect(x, y, w, 24);
+        ctx.fillStyle = "#0b1500"; ctx.font = "10px monospace"; ctx.textAlign = "center";
+        if (w > 16) ctx.fillText(label, x + w / 2, y + 16);
+      }
+      // streamA: kernelA then record(done)
+      lane(40, "streamA");
+      bar(t0, 40, aLen * px, "kernelA", accent);
+      const recX = t0 + aLen * px;
+      ctx.fillStyle = warn; ctx.beginPath(); ctx.arc(recX, 52, 6, 0, 7); ctx.fill();
+      ctx.fillStyle = ink; ctx.font = "10px monospace"; ctx.textAlign = "center";
+      ctx.fillText("record(done)", recX, 34);
+
+      // streamB: own work, then (maybe) wait for the event, then kernelB
+      lane(110, "streamB");
+      const bWorkEnd = t0 + bQueued * px;
+      bar(t0, 110, bQueued * px, "B work", cool);
+      const startB = linked ? Math.max(bWorkEnd, recX) : bWorkEnd;
+      const waited = linked && startB > bWorkEnd;
+      if (waited) {
+        ctx.strokeStyle = warn; ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(bWorkEnd, 122); ctx.lineTo(startB, 122); ctx.stroke();
+        ctx.setLineDash([]);
+        // arrow from record dot down to B's start
+        ctx.strokeStyle = warn; ctx.beginPath(); ctx.moveTo(recX, 58); ctx.lineTo(startB, 110); ctx.stroke();
+      }
+      bar(startB, 110, 4 * px, "kernelB", linked ? cool : warn);
+
+      const safe = startB >= recX;
+      out.innerHTML = linked
+        ? (waited
+          ? "<span class='good'>B waited: kernelB starts at A's end. The event ordered the queues; the CPU never blocked.</span>"
+          : "<span class='good'>B's own work already ran past A's end, so the wait is free here — but the event still guarantees the ordering.</span>")
+        : (safe
+          ? "No event, but B happened to start after A finished — luck, not ordering. Remove the wait and timing alone decides correctness."
+          : "<span class='warn'>No event: kernelB starts before kernelA finished. Separate streams are independent queues — without cudaStreamWaitEvent nothing orders them.</span>");
+    }
+    draw();
+    return draw;
+  }
+
   // ---- registry & automount ---------------------------------------------
   const FACTORIES = {
     "thread-index": threadIndex,
@@ -963,6 +1428,13 @@
     "sm-scheduler": smScheduler,
     "library-choice": libraryChoice,
     "imaging-pattern": imagingPattern,
+    "execution-model": executionModel,
+    "block-to-sm": blockToSm,
+    "warp-lanes": warpLanes,
+    "sync-scope": syncScope,
+    "sync-mask": syncMask,
+    "cross-warp-race": crossWarpRace,
+    "stream-event-dependency": streamEventDependency,
   };
 
   function mountAll() {

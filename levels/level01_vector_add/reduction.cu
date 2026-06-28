@@ -9,7 +9,7 @@ namespace dojo::level01 {
 // A first, deliberately simple reduction. Each block sums a grid-stride slice
 // of the input into shared memory, tree-reduces within the block, and writes
 // one partial sum to global memory. The host adds up the (small number of)
-// partials. We'll revisit reduction properly at Level 6 with warp shuffles —
+// partials. We'll revisit reduction properly at Level 7 with warp shuffles —
 // this version exists so you can see shared memory + __syncthreads() once.
 constexpr int kBlock = 256;
 

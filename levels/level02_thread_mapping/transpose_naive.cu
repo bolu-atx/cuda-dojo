@@ -21,7 +21,7 @@ namespace dojo::level02 {
 //
 // Swap the mapping so writes are coalesced and the *reads* become strided
 // instead. You cannot make both ends coalesced with thread mapping alone — that
-// is the cliffhanger. Level 3 fixes it by staging a tile in shared memory.
+// is the cliffhanger. Level 4 fixes it by staging a tile in shared memory.
 //
 // Implement the naive version here, then PREDICT before profiling: roughly what
 // fraction of peak bandwidth will a strided-on-one-end transpose reach?

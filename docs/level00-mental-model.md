@@ -62,7 +62,7 @@ regular work."
   every cycle. This is how it hides memory latency.
 - **Occupancy** = how many warps are resident on an SM vs the max. More resident
   warps ⇒ more latency to hide behind. (High level for now; we quantify it at
-  Level 4.)
+  Level 5.)
 
 So: thousands of threads aren't a parallelism *goal*, they're the *mechanism*. You
 need a big pile of ready warps so the SM always has something to run while others

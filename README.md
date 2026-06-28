@@ -131,7 +131,7 @@ architecture (now also covering multi-GPU scaling — NCCL/NVSHMEM, MIG), librar
 and imaging/CV. Each one is built around prediction, interactive widgets, and concrete
 CUDA reps rather than reference-manual lists.
 
-## Profiling (from Level 4 onward)
+## Profiling (from Level 5 onward)
 
 Release builds compile with `-lineinfo` so the profilers map SASS back to source:
 
