@@ -75,6 +75,14 @@ transfers did at Level 8:
 - **GEMM** — the canonical multi-stage tiled algorithm: load tiles → multiply →
   accumulate, looping over the K dimension. Register-blocked GEMM is the rite of
   passage; then compare to cuBLAS (Level 7).
+
+    !!! tip "Here padding stops working — swizzle instead"
+        GEMM is where the [Level 5](level05-shared-memory.md#padding-vs-swizzling)
+        swizzle stretch pays off. Its shared tiles fight for the smem that caps
+        occupancy, and the inner loop relies on 128-bit vectorized `ld.shared`. A
+        `[N][N+1]` pad wastes that smem *and* breaks the power-of-two stride
+        `float4` needs — so a fast GEMM removes bank conflicts with **XOR
+        swizzling** (`tile[row][col ^ row]`), not padding.
 - **Fuse an imaging chain** — take a `scale → bias → clamp` sequence on an image,
   measure the 3-kernel version, then fuse into one and measure again. Report the
   DRAM bytes saved and the speedup.

@@ -66,6 +66,45 @@ the **integral image**. Master the rhythm once and these all fall out.
     (`tile[TILE][TILE+1]`) to skew the layout. Verify with `ncu`'s
     "shared memory bank conflicts" metric, don't assume.
 
+## Padding vs. swizzling
+
+Padding is the *first* tool for bank conflicts, not the only one. Shared memory has
+32 banks; `bank(addr) = (addr / 4) % 32`. In a clean 32-wide tile, element
+`(row, col)` lands in bank `col`. A transpose reads a whole **column** (`col`
+fixed, `row` sweeps 0–31) — every lane hits the *same* bank `col`: a 32-way
+conflict. Padding to `tile[32][33]` skews each row by one bank so a column spreads
+across all 32. **Swizzling** gets the same result by permuting the index instead of
+the layout — store the column at `col ^ row`:
+
+```cpp
+tile[row][col ^ row] = ...;   // store, then read back with the SAME xor
+```
+
+XOR is a bijection for each fixed operand, so it's conflict-free in *both*
+directions, on a clean power-of-two square:
+
+```
+            bank hit by lane = row (col fixed) on the transpose read
+  col=0 :  pad 0 1 2 .. 31   swizzle 0 1 2 .. 31   (both: all 32 distinct ✓)
+  naive 0 :          0 0 0 .. 0   ← every lane → bank 0, 32-way conflict ✗
+```
+
+So why ever swizzle if padding already works? Two costs padding pays that swizzle
+avoids: it **wastes shared memory** (the scarce resource that caps occupancy), and
+its non-power-of-two stride **breaks 128-bit vectorized `ld.shared`** (a stride of
+33 floats is unaligned for `float4`). On a transpose neither bites — but predict
+the bank conflicts per warp for the naive, padded, and swizzled kernels, then prove
+it:
+
+```bash
+ncu --set full ./level05_swizzle_demo   # metric: Shared Memory Bank Conflicts
+```
+
+Naive spikes; padded and swizzled are both ~0. On a plain transpose padding is
+fine, so swizzle looks optional — but at [Level 9](level09-multi-kernel.md), a
+tiled GEMM can't spare the shared memory or give up vectorized loads, so swizzle
+stops being a choice.
+
 ## Your reps
 
 | Project | New skill |
@@ -74,8 +113,10 @@ the **integral image**. Master the rhythm once and these all fall out.
 | **separable blur** (your turn) | two passes (row, col) — half the work |
 
 Stretch reps once those land: revisit the **tiled transpose** with shared-memory
-padding, a per-block **local histogram** (privatized bins → bridge to Level 7),
-and a **block prefix scan** (up-sweep / down-sweep over shared memory).
+padding, **shared-memory swizzling** (XOR indexing — conflict-free with no padding;
+run `level05_swizzle_demo`), a per-block **local histogram** (privatized bins →
+bridge to Level 7), and a **block prefix scan** (up-sweep / down-sweep over shared
+memory).
 
 ??? question "Self-check"
     Your tiled box filter loads a 16×16 output tile with a 1-pixel halo. How big
@@ -83,5 +124,13 @@ and a **block prefix scan** (up-sweep / down-sweep over shared memory).
     global memory vs. how many output pixels it produces? *(18×18 = 324 fetched;
     256 produced. The 324 fetches replace up to 256×9 = 2304 naive global reads —
     that ratio is your speedup ceiling.)*
+
+??? question "Self-check — swizzle"
+    A 32×32 tile, transpose read (column access). What bank does lane `row` hit
+    with a naive `tile[row][col]`, a padded `tile[row][col]` over `[32][33]`, and a
+    swizzled `tile[row][col ^ row]`? *(Naive: bank `col` for every lane → 32-way
+    conflict. Padded: each row shifts by one bank, so lanes hit `(col + row) % 32`
+    → all distinct. Swizzle: lanes hit `col ^ row` → all distinct. Padding burns a
+    column of smem to do it; swizzle keeps the clean power-of-two stride.)*
 
 → Continue to [Level 6 — Warp Programming](level06-warps.md)
