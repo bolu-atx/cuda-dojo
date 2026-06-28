@@ -10,6 +10,8 @@
 (function () {
   "use strict";
 
+  const activeWidgets = [];
+
   // ---- tiny DOM + canvas helpers ----------------------------------------
   function el(tag, cls, html) {
     const e = document.createElement(tag);
@@ -75,18 +77,18 @@
   }
 
   function css(name, fallback) {
-    const v = getComputedStyle(document.documentElement)
-      .getPropertyValue(name).trim();
+    const el = document.body || document.documentElement;
+    const v = getComputedStyle(el).getPropertyValue(name).trim();
     return v || fallback;
   }
   const C = {
     accent: () => css("--dojo-accent", "#76b900"),
     warn: () => css("--dojo-warn", "#e0633a"),
     cool: () => css("--dojo-cool", "#3a8ee0"),
-    ink: () => css("--md-default-fg-color", "#222"),
-    faint: () => "rgba(128,128,128,0.25)",
+    ink: () => css("--dojo-canvas-text", "#222"),
+    faint: () => css("--dojo-canvas-faint", "rgba(128,128,128,0.25)"),
   };
-  function textColor() { return css("--md-default-fg-color", "#333"); }
+  function textColor() { return css("--dojo-canvas-text", "#333"); }
 
   // =======================================================================
   // 1. thread-index — global index = blockIdx*blockDim + threadIdx
@@ -146,6 +148,7 @@
         gridDim + "×" + blockDim + " = <b>" + total + "</b>";
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -186,6 +189,7 @@
         handled.join(", ") + "] — stride = total threads = <b>" + threads + "</b>";
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -227,6 +231,7 @@
           : "<span class='good'>uniform branch → no divergence</span>");
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -263,6 +268,7 @@
         "One stalled warp isn't a problem if 20 others have work — that's latency hiding.";
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -329,6 +335,7 @@
           : "<span class='warn'>" + (100 - eff) + "% of fetched bytes are wasted.</span>");
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -383,6 +390,7 @@
               : " — green cells += red cells, then __syncthreads()");
     }
     reset();
+    return draw;
   }
 
   // =======================================================================
@@ -446,6 +454,7 @@
                     : "(it's saturating the math units)");
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -599,6 +608,7 @@
           : "<span class='good'>— x→column keeps the warp contiguous. Coalesced.</span>");
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -641,6 +651,7 @@
           : "<span class='good'>This is exactly why tiling (GEMM, convolution, transpose) wins.</span>");
     }
     draw();
+    return draw;
   }
 
   // =======================================================================
@@ -704,6 +715,7 @@
       out.innerHTML = "step <b>" + step + "</b> / " + (2 * N) + " — " + msg;
     }
     draw();
+    return draw;
   }
 
   // ---- registry & automount ---------------------------------------------
@@ -725,9 +737,54 @@
     document.querySelectorAll("[data-dojo]").forEach(node => {
       if (node.dataset.dojoMounted) return;
       const f = FACTORIES[node.dataset.dojo];
-      if (f) { node.dataset.dojoMounted = "1"; try { f(node); } catch (e) { console.error("dojo widget failed:", node.dataset.dojo, e); } }
+      if (f) {
+        node.dataset.dojoMounted = "1";
+        try {
+          const draw = f(node);
+          if (typeof draw === "function") {
+            activeWidgets.push({ el: node, draw });
+          }
+        } catch (e) {
+          console.error("dojo widget failed:", node.dataset.dojo, e);
+        }
+      }
     });
   }
+
+  function triggerThemeChangeRedraw() {
+    const stillActive = [];
+    activeWidgets.forEach(item => {
+      if (document.body.contains(item.el)) {
+        stillActive.push(item);
+        try {
+          item.draw();
+        } catch (e) {
+          console.error("Redraw failed:", e);
+        }
+      }
+    });
+    activeWidgets.length = 0;
+    activeWidgets.push(...stillActive);
+  }
+
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      if (mutation.attributeName === "data-md-color-scheme") {
+        triggerThemeChangeRedraw();
+      }
+    });
+  });
+
+  function startObserver() {
+    if (document.body) {
+      observer.observe(document.body, { attributes: true });
+    } else {
+      document.addEventListener("DOMContentLoaded", () => {
+        observer.observe(document.body, { attributes: true });
+      });
+    }
+  }
+  startObserver();
 
   // mkdocs-material uses instant navigation; re-mount on each page swap.
   if (window.document$ && typeof window.document$.subscribe === "function") {

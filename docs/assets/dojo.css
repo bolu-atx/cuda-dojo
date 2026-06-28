@@ -8,6 +8,28 @@
   --dojo-warn: #e0633a;
   --dojo-cool: #3a8ee0;
   --dojo-grid-line: rgba(128, 128, 128, 0.35);
+
+  /* Palette defaults (Light theme) */
+  --dojo-canvas-text: #222222;
+  --dojo-canvas-faint: rgba(128, 128, 128, 0.25);
+  --dojo-slider-track: rgba(0, 0, 0, 0.12);
+  --dojo-diagram-faint-fill: rgba(128, 128, 128, 0.15);
+  --dojo-diagram-faint-stroke: rgba(128, 128, 128, 0.5);
+  --dojo-text-on-accent: #0b1500;
+}
+
+[data-md-color-scheme="slate"] {
+  --dojo-accent: #76b900;
+  --dojo-accent-dim: #99df24; /* Brighter green on hover in dark mode */
+  --dojo-grid-line: rgba(255, 255, 255, 0.2);
+
+  /* Palette overrides (Dark theme) */
+  --dojo-canvas-text: #e0e2e8;
+  --dojo-canvas-faint: rgba(255, 255, 255, 0.15);
+  --dojo-slider-track: rgba(255, 255, 255, 0.2);
+  --dojo-diagram-faint-fill: rgba(255, 255, 255, 0.1);
+  --dojo-diagram-faint-stroke: rgba(255, 255, 255, 0.35);
+  --dojo-text-on-accent: #0b1500;
 }
 
 /* Left sidebar: separate the section navigation from the integrated page TOC.
@@ -149,8 +171,58 @@
 }
 
 .dojo-control input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
   width: 100%;
-  accent-color: var(--dojo-accent);
+  margin: 0.4rem 0;
+}
+
+/* Track */
+.dojo-control input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--dojo-slider-track);
+  height: 6px;
+  border-radius: 3px;
+}
+.dojo-control input[type="range"]::-moz-range-track {
+  background: var(--dojo-slider-track);
+  height: 6px;
+  border-radius: 3px;
+}
+
+/* Thumb */
+.dojo-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px; /* center the thumb vertically */
+  background-color: var(--dojo-accent);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.dojo-control input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background-color: var(--dojo-accent-dim);
+}
+.dojo-control input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+.dojo-control input[type="range"]::-moz-range-thumb {
+  border: none;
+  border-radius: 50%;
+  background-color: var(--dojo-accent);
+  height: 16px;
+  width: 16px;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.dojo-control input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  background-color: var(--dojo-accent-dim);
+}
+.dojo-control input[type="range"]::-moz-range-thumb:active {
+  transform: scale(0.95);
 }
 
 .dojo-control .dojo-val {
@@ -192,19 +264,25 @@
   height: auto;
   max-width: 760px;
   margin: 1.4rem auto;
-  color: var(--md-default-fg-color, #333);   /* drives stroke/fill=currentColor */
+  color: var(--dojo-canvas-text, var(--md-default-fg-color, #333));   /* drives stroke/fill=currentColor */
   font-family: var(--md-code-font-family, monospace);
 }
 .dojo-diagram .accent { color: var(--dojo-accent); }     /* nest to recolor a group */
-.dojo-diagram text { fill: currentColor; }
+.dojo-diagram text { fill: currentColor !important; }
 .dojo-diagram .stroke { stroke: currentColor; fill: none; }
 .dojo-diagram .label { font-size: 13px; }
 .dojo-diagram .mono { font-family: var(--md-code-font-family, monospace); font-size: 12px; }
 .dojo-diagram .fill-accent { fill: var(--dojo-accent); }
-.dojo-diagram .fill-faint { fill: rgba(128, 128, 128, 0.15); }
+.dojo-diagram .fill-faint { fill: var(--dojo-diagram-faint-fill); }
 .dojo-diagram .stroke-accent { stroke: var(--dojo-accent); fill: none; }
-.dojo-diagram .stroke-faint { stroke: rgba(128, 128, 128, 0.5); fill: none; }
+.dojo-diagram .stroke-faint { stroke: var(--dojo-diagram-faint-stroke); fill: none; }
 .dojo-diagram .stroke-warn { stroke: var(--dojo-warn); fill: none; }
+
+/* Ensure high contrast for text inside accented blocks in dark mode */
+.dojo-diagram .fill-accent + text,
+.dojo-diagram rect.fill-accent + text {
+  fill: var(--dojo-text-on-accent) !important;
+}
 
 /* "answer this" prompt blocks for the Feynman buildup */
 .dojo-quiz {
