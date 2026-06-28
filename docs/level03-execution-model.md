@@ -76,13 +76,34 @@ __shared__ float tile[32][33];  // one allocation, private to this block
 __syncthreads();                // waits for THIS block's threads only
 ```
 
-```text
-        block (whole) ── scheduled onto ──▶ one SM
-        ┌───────────────────────────┐      ┌──────────────────────────┐
-        │ thread thread thread ...   │      │ shared mem │ regs │ warps │
-        └───────────────────────────┘      └──────────────────────────┘
-                 share __shared__ + __syncthreads()
-```
+<svg class="dojo-diagram" viewBox="0 0 760 150" role="img" aria-label="A whole block is scheduled onto one SM, where it can use that SM's shared memory, registers, and warp slots. A block never spans two SMs.">
+  <text class="mono" x="170" y="32" text-anchor="middle">block (whole)</text>
+  <text class="mono" x="590" y="32" text-anchor="middle">one SM</text>
+  <rect class="stroke-accent" x="20" y="42" width="300" height="52" rx="6"/>
+  <g class="fill-faint">
+    <rect x="30" y="50" width="40" height="20" rx="3"/>
+    <rect x="76" y="50" width="40" height="20" rx="3"/>
+    <rect x="122" y="50" width="40" height="20" rx="3"/>
+    <rect x="168" y="50" width="40" height="20" rx="3"/>
+    <rect x="214" y="50" width="40" height="20" rx="3"/>
+    <rect x="260" y="50" width="40" height="20" rx="3"/>
+  </g>
+  <text class="mono" x="170" y="88" text-anchor="middle">threads</text>
+  <text class="mono" x="380" y="58" text-anchor="middle">scheduled onto</text>
+  <line class="stroke-accent" x1="324" y1="68" x2="430" y2="68"/>
+  <path class="fill-accent" d="M428,62 l10,6 l-10,6 z"/>
+  <rect class="stroke-accent" x="440" y="42" width="300" height="52" rx="6"/>
+  <line class="stroke-faint" x1="540" y1="42" x2="540" y2="94"/>
+  <line class="stroke-faint" x1="640" y1="42" x2="640" y2="94"/>
+  <g class="mono">
+    <text x="490" y="73" text-anchor="middle">shared mem</text>
+    <text x="590" y="73" text-anchor="middle">regs</text>
+    <text x="690" y="73" text-anchor="middle">warps</text>
+  </g>
+  <text class="mono" x="170" y="118" text-anchor="middle">share __shared__ + __syncthreads()</text>
+  <text class="mono" x="590" y="118" text-anchor="middle">the block's on-SM resources</text>
+  <text class="mono accent" x="380" y="142" text-anchor="middle">a block never spans two SMs</text>
+</svg>
 
 <div data-dojo="block-to-sm"></div>
 
