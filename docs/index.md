@@ -6,7 +6,7 @@
 
 > *"What I cannot create, I do not understand."* — Richard Feynman
 
-This is the companion guide to the [`cuda-dojo`](https://github.com/) code repo. It
+This is the companion guide to the [`cuda-dojo`](https://github.com/bolu-atx/cuda-dojo) code repo. It
 is **not** a reference manual. Each page takes one idea, builds it up from
 something you already know, and gives you an interactive toy to poke at until the
 idea clicks. Then you go write the kernel.
@@ -49,8 +49,8 @@ point: if you can only generate it, you don't yet understand it.
 | [2](level02-thread-mapping.md) | You design the thread→data mapping | transpose / crop / resize |
 | [3](level03-memory-hierarchy.md) | Where data lives dominates speed | tiled transpose |
 | [4](level04-performance.md) | Every kernel is memory- or compute-bound | optimize blur / Sobel |
-| [5](level05-shared-memory.md) | A block is a team with a shared scratchpad | convolution / box filter |
-| [6](level06-warps.md) | 32 threads can talk without memory | warp reduction / scan |
+| [5](level05-shared-memory.md) | A block is a team with a shared scratchpad | box filter / separable blur |
+| [6](level06-warps.md) | 32 threads can talk without memory | warp reduction / histogram |
 | [7](level07-libraries.md) | Don't hand-roll GEMM or FFT | cuBLAS / cuFFT pipeline |
 | [8](level08-streams.md) | Overlap copy and compute | video pipeline |
 | [9](level09-multi-kernel.md) | Real programs are kernel graphs | GEMM |
