@@ -50,6 +50,10 @@ Too few resident warps ⇒ not enough latency to hide behind ⇒ ALUs stall. Cau
 by too many registers per thread or too much shared memory per block. The
 occupancy calculator (and Nsight) tells you the limiter.
 
+The deeper scheduler question is not "is occupancy high?" but "are there enough
+**eligible warps** to fill issue slots while other warps wait?" That is the bridge
+from this level into [Architecture Deep Dive](track-architecture.md).
+
 ## Measure, don't guess
 
 This is the level where you stop reasoning and start instrumenting:

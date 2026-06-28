@@ -718,6 +718,235 @@
     return draw;
   }
 
+  // =======================================================================
+  // 12. sm-scheduler — eligible warps and issue slots
+  // =======================================================================
+  function smScheduler(root) {
+    shell(root, "SM scheduler: resident warps are not always ready warps",
+      "Predict whether the scheduler has enough eligible warps to fill issue slots. More occupancy helps only when it creates ready work.");
+    const W = 720, H = 220;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let resident = 16, latency = 10, registers = 4, ilp = 2;
+    slider(cs, "resident warps", 1, 32, resident, 1, v => { resident = v; draw(); });
+    slider(cs, "memory wait", 0, 24, latency, 1, v => { latency = v; draw(); });
+    slider(cs, "register pressure", 1, 8, registers, 1, v => { registers = v; draw(); });
+    slider(cs, "independent work", 1, 8, ilp, 1, v => { ilp = v; draw(); });
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const issueSlots = 4;
+      const cap = Math.max(1, Math.floor(32 / registers));
+      const active = Math.min(resident, cap);
+      const readyFrac = Math.max(0.05, Math.min(1, (ilp + 1) / (latency / 3 + 4)));
+      const eligible = Math.min(active, Math.max(1, Math.round(active * readyFrac)));
+      const issued = Math.min(issueSlots, eligible);
+      const stall = issueSlots - issued;
+
+      ctx.fillStyle = textColor();
+      ctx.font = "12px monospace";
+      ctx.textAlign = "left";
+      ctx.fillText("resident warps that fit after register pressure", 20, 22);
+
+      const cols = 16, cell = 18, gap = 4;
+      for (let i = 0; i < 32; i++) {
+        const x = 20 + (i % cols) * (cell + gap);
+        const y = 36 + Math.floor(i / cols) * (cell + gap);
+        let fill = "rgba(128,128,128,0.12)";
+        if (i < active) fill = i < eligible ? C.accent() : C.warn();
+        if (i >= active && i < resident) fill = "rgba(128,128,128,0.28)";
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, cell, cell);
+      }
+
+      const sx = 430, sy = 42;
+      ctx.fillStyle = textColor();
+      ctx.font = "12px monospace";
+      ctx.fillText("issue slots this cycle", sx, sy - 14);
+      for (let i = 0; i < issueSlots; i++) {
+        ctx.fillStyle = i < issued ? C.accent() : "rgba(224,99,58,0.35)";
+        ctx.fillRect(sx + i * 52, sy, 42, 42);
+        ctx.fillStyle = i < issued ? "#0b1500" : textColor();
+        ctx.font = "bold 14px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(i < issued ? "ISS" : "IDLE", sx + i * 52 + 21, sy + 27);
+      }
+
+      ctx.fillStyle = textColor();
+      ctx.textAlign = "left";
+      ctx.font = "11px monospace";
+      ctx.fillText("green = eligible, orange = resident but waiting, grey = cannot fit", 20, 105);
+
+      const bw = 620, bh = 18, bx = 50, by = 150;
+      ctx.fillStyle = "rgba(128,128,128,0.18)";
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = C.accent();
+      ctx.fillRect(bx, by, bw * (issued / issueSlots), bh);
+      ctx.fillStyle = C.warn();
+      ctx.fillRect(bx + bw * (issued / issueSlots), by, bw * (stall / issueSlots), bh);
+      ctx.fillStyle = textColor();
+      ctx.textAlign = "center";
+      ctx.font = "12px monospace";
+      ctx.fillText("scheduler utilization", bx + bw / 2, by - 8);
+
+      const reason = stall === 0 ? "issue slots filled" :
+        latency > ilp * 3 ? "memory latency dominates" :
+        registers > 5 ? "register pressure limits residency" :
+        "not enough ready warps";
+      out.innerHTML = "active warps = <b>" + active + "</b>, eligible now = <b>" + eligible +
+        "</b>, issued = <b>" + issued + "/" + issueSlots + "</b> — " +
+        (stall ? "<span class='warn'>" + reason + "</span>" : "<span class='good'>" + reason + "</span>");
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // 13. library-choice — choose the right CUDA tool
+  // =======================================================================
+  function libraryChoice(root) {
+    shell(root, "Library or custom kernel?",
+      "Move the workload shape. The lesson is to name the primitive before writing code.");
+    const W = 720, H = 230;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let kind = 0, fusion = 0, prototype = 0;
+    const kinds = ["reduce/scan", "GEMM", "FFT", "image op", "custom stencil"];
+    slider(cs, "workload", 0, kinds.length - 1, kind, 1, v => { kind = v; draw(); });
+    slider(cs, "fusion need", 0, 3, fusion, 1, v => { fusion = v; draw(); });
+    slider(cs, "prototype speed", 0, 3, prototype, 1, v => { prototype = v; draw(); });
+
+    function pick() {
+      if (prototype >= 2 && kind === 0) return ["Thrust", "express it quickly, then replace hot paths with CUB"];
+      if (kind === 0) return ["CUB", "standard parallel primitive"];
+      if (kind === 1 && fusion >= 2) return ["cuBLASLt / CUTLASS", "GEMM-shaped work with epilogue or custom tiling"];
+      if (kind === 1) return ["cuBLAS", "standard dense linear algebra"];
+      if (kind === 2) return ["cuFFT", "spectral transform; keep plans outside the hot loop"];
+      if (kind === 3 && fusion <= 1) return ["NPP / CV-CUDA", "common production image primitive"];
+      if (kind === 3) return ["library + custom glue", "library primitive plus fused boundary/layout code"];
+      return fusion >= 2 ? ["custom CUDA", "semantics or fusion are the product"] : ["NPP or custom CUDA", "compare library semantics before coding"];
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const labels = ["Thrust", "CUB", "cuBLAS", "cuFFT", "NPP/CV-CUDA", "CUTLASS", "custom"];
+      const chosen = pick();
+      const x0 = 24, y0 = 58, w = 92, h = 42, gap = 8;
+      ctx.fillStyle = textColor();
+      ctx.font = "12px monospace";
+      ctx.textAlign = "left";
+      ctx.fillText("workload: " + kinds[kind], x0, 24);
+      ctx.fillText("decision ladder", x0, 48);
+      labels.forEach((label, i) => {
+        const x = x0 + i * (w + gap);
+        const on = chosen[0].indexOf(label.split("/")[0]) >= 0 || (label === "custom" && chosen[0].indexOf("custom") >= 0);
+        ctx.fillStyle = on ? C.accent() : "rgba(128,128,128,0.16)";
+        ctx.fillRect(x, y0, w, h);
+        ctx.fillStyle = on ? "#0b1500" : textColor();
+        ctx.font = "bold 11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(label, x + w / 2, y0 + 26);
+        if (i < labels.length - 1) {
+          ctx.fillStyle = textColor();
+          ctx.fillText("→", x + w + gap / 2, y0 + 26);
+        }
+      });
+
+      const rx = 70, ry = 140;
+      ctx.fillStyle = "rgba(128,128,128,0.12)";
+      ctx.fillRect(rx, ry, 580, 52);
+      ctx.fillStyle = C.accent();
+      ctx.fillRect(rx, ry, Math.min(580, 120 + fusion * 105), 6);
+      ctx.fillStyle = textColor();
+      ctx.textAlign = "center";
+      ctx.font = "12px monospace";
+      ctx.fillText("more fusion/custom semantics pushes right; standard primitives push left", rx + 290, ry + 34);
+
+      out.innerHTML = "reach for <b>" + chosen[0] + "</b> — " + chosen[1] +
+        ". If you disagree, state the missing semantic before writing a kernel.";
+    }
+    draw();
+    return draw;
+  }
+
+  // =======================================================================
+  // 14. imaging-pattern — algorithm shape before code
+  // =======================================================================
+  function imagingPattern(root) {
+    shell(root, "Image algorithm shape",
+      "Pick the algorithm and kernel size. Predict whether the GPU wants a stencil, separable pass, FFT, or pipeline.");
+    const W = 720, H = 235;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let alg = 0, k = 7;
+    const algs = ["Sobel", "Gaussian", "Morphology", "FFT conv", "Warp"];
+    slider(cs, "algorithm", 0, algs.length - 1, alg, 1, v => { alg = v; draw(); });
+    slider(cs, "kernel / footprint", 3, 63, k, 2, v => { k = v; draw(); });
+
+    function recommendation() {
+      if (alg === 0) return ["stencil tile", 9, "small fixed neighborhood; coalesce and reuse halo pixels"];
+      if (alg === 1) return ["separable passes", 2 * k, "k×k becomes horizontal k plus vertical k"];
+      if (alg === 2) return ["window min/max", k * k, "stage the window or use library morphology"];
+      if (alg === 3) return ["cuFFT pipeline", Math.round(k * Math.log2(k) * 2), "large kernels can win in frequency space"];
+      return ["gather warp", 4, "interpolate cached reads, keep writes contiguous"];
+    }
+
+    function drawGrid(x, y, n, highlightFn) {
+      const c = 12;
+      for (let r = 0; r < n; r++) for (let col = 0; col < n; col++) {
+        ctx.fillStyle = highlightFn(r, col) ? C.accent() : "rgba(128,128,128,0.16)";
+        ctx.fillRect(x + col * c, y + r * c, c - 1, c - 1);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const rec = recommendation();
+      const n = 11, cx = 5, cy = 5;
+      ctx.fillStyle = textColor();
+      ctx.font = "12px monospace";
+      ctx.textAlign = "left";
+      ctx.fillText("algorithm: " + algs[alg] + "  |  footprint: " + k + "×" + k, 24, 24);
+
+      drawGrid(40, 50, n, (r, c) => {
+        if (alg === 4) return (r === 3 || r === 4) && (c === 6 || c === 7);
+        const rad = alg === 0 ? 1 : Math.min(5, Math.floor(k / 12) + 1);
+        return Math.abs(r - cy) <= rad && Math.abs(c - cx) <= rad;
+      });
+      ctx.fillStyle = C.warn();
+      ctx.fillRect(40 + cx * 12, 50 + cy * 12, 11, 11);
+      ctx.fillStyle = textColor();
+      ctx.font = "11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("one output pixel asks for this neighborhood", 106, 198);
+
+      const bars = [
+        ["direct stencil", k * k],
+        ["separable", 2 * k],
+        ["FFT-ish", Math.max(20, Math.round(k * Math.log2(k) * 2))],
+      ];
+      const max = Math.max(...bars.map(b => b[1]));
+      bars.forEach((b, i) => {
+        const x = 260, y = 62 + i * 44;
+        ctx.fillStyle = b[0] === rec[0] || (rec[0] === "stencil tile" && i === 0) || (rec[0] === "window min/max" && i === 0) || (rec[0] === "cuFFT pipeline" && i === 2) || (rec[0] === "separable passes" && i === 1)
+          ? C.accent() : "rgba(128,128,128,0.2)";
+        ctx.fillRect(x, y, 330 * (b[1] / max), 24);
+        ctx.fillStyle = textColor();
+        ctx.textAlign = "left";
+        ctx.font = "12px monospace";
+        ctx.fillText(b[0] + " ~" + b[1] + " work units", x, y - 6);
+      });
+
+      out.innerHTML = "shape = <b>" + rec[0] + "</b> — " + rec[2] +
+        ". First predict bytes moved and reuse, then write the kernel.";
+    }
+    draw();
+    return draw;
+  }
+
   // ---- registry & automount ---------------------------------------------
   const FACTORIES = {
     "thread-index": threadIndex,
@@ -731,6 +960,9 @@
     "thread-map-2d": threadMap2d,
     "mem-hierarchy": memHierarchy,
     "tiled-transpose": tiledTranspose,
+    "sm-scheduler": smScheduler,
+    "library-choice": libraryChoice,
+    "imaging-pattern": imagingPattern,
   };
 
   function mountAll() {
