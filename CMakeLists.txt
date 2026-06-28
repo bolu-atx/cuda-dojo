@@ -60,3 +60,6 @@ target_include_directories(dojo_test INTERFACE "${CMAKE_SOURCE_DIR}/common")
 enable_testing()
 
 add_subdirectory(levels/level01_vector_add)
+add_subdirectory(levels/level02_thread_mapping)
+add_subdirectory(levels/level03_memory_hierarchy)
+add_subdirectory(levels/level04_performance)

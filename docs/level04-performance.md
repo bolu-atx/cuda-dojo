@@ -67,13 +67,44 @@ Compute **achieved GB/s** yourself too (`bytes / time`, the repo's `gbps()` help
 and divide by your GPU's peak. Memory-bound kernel at 85% of peak bandwidth? Ship
 it. At 30%? You have a coalescing or occupancy bug.
 
-## Your reps
+## The exercises — `levels/level04_performance/`
 
-Take the repo's image filters and optimize them with numbers, not vibes:
+This level's deliverable is **a number, not a kernel**. The demo does the
+instrumenting for you: for each kernel it computes arithmetic intensity *before*
+timing, then prints achieved GB/s, GFLOP/s, and **% of theoretical peak** with a
+memory- vs compute-bound verdict. Your job is to read those numbers, classify the
+kernel, then earn back the gap.
 
-- **Box blur / Sobel / morphology** — all memory-bound. Target: ≥80% of peak BW.
-- For each: report **GB/s and GFLOP/s before and after**, and state which wall you
-  were hitting and which sin you fixed.
+| File | Status | The payoff |
+|------|--------|------------|
+| `box_blur_naive.cu` | ✅ **baseline** | A radius-`r` box blur; each thread re-fetches its whole `(2r+1)²` window from global. Compute its AI by hand first, then confirm the demo agrees it's memory-bound. |
+| `box_blur_opt.cu` | 📝 **your turn** | Same result, but move far fewer bytes — shared-tile + halo, or exploit separability (`(2r+1)²` reads → `2(2r+1)`). Target: **≥80% of peak BW**. Name which of the four sins you removed. |
+| `sobel.cu` | ✅ **complete** | A second memory-bound stencil. Use it to practice the habit: predict AI ≈ 0.5 FLOP/B and notice the `sqrt` does **not** flip the classification. |
+
+What to get out of it:
+
+- **Compute AI first, every time.** Before touching the optimized kernel, predict
+  its achieved bandwidth and which wall governs. Someone who understands lands
+  within ~2×; cargo-culting can't. The demo is your answer key.
+- **Know when to stop.** A memory-bound kernel at ≥80% of peak is essentially
+  done — going faster means *raising arithmetic intensity* (moving fewer bytes),
+  not chasing the last 10% of the bandwidth ceiling.
+
+!!! tip "Prove it, don't trust it"
+    `make level04-test` pins correctness (the optimized blur must match the
+    baseline to tolerance, at awkward sizes). For the performance claims, the demo
+    self-reports GB/s, but the **source of truth** is the profiler — the demo even
+    prints the commands:
+
+    ```bash
+    nsys profile  ./build/levels/level04_performance/level04_demo
+    ncu --set full ./build/levels/level04_performance/level04_demo
+    ```
+
+    Note: the demo's GB/s counts *minimum* traffic (one read + one write). The
+    naive kernels move more because of overlapping re-fetches — that excess is
+    exactly the headroom `ncu` will show you, and exactly what your optimized
+    kernel removes.
 
 ??? question "Self-check"
     A kernel achieves 1400 GB/s on a GPU with 1555 GB/s peak and AI=0.5. Is there

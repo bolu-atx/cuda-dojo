@@ -106,7 +106,7 @@ stride (threads map down a column, or you index `x*height + y`) wastes bus
 bandwidth. We'll make this quantitative at [Level 4](level04-performance.md);
 for now just **always make `threadIdx.x` run along contiguous memory.**
 
-## Your reps (these all live or extend in the repo's `levels/`)
+## The wider menu
 
 | Project | What it teaches |
 |---------|-----------------|
@@ -116,10 +116,30 @@ for now just **always make `threadIdx.x` run along contiguous memory.**
 | **transpose** | output `(x,y)` reads input `(y,x)` — the canonical coalescing trap |
 | **rotation / resize** | non-integer source coords → gather + interpolation |
 
+## The exercises — `levels/level02_thread_mapping/`
+
+Three of those reps are wired up for you. **invert** is a complete worked
+example: read it first, it's the pattern every other kernel here copies. The
+other two are stubs — the host plumbing is written, the kernel body is a `TODO`,
+and the tests are the spec. Fill them in until `make level02-test` is green.
+
+| File | Status | The payoff |
+|------|--------|------------|
+| `invert.cu` | ✅ **worked example** | See the canonical 2D launch: `block(32,8)`, two-sided guard, `x`→column so a warp's 32 lanes read one contiguous run. |
+| `crop.cu` | 📝 **your turn** | The output pixel `(x,y)` is **not** the input pixel: it reads `(x+x0, y+y0)`. Get fluent with "which thread owns which element," and notice the input/output allocations are now different sizes. |
+| `transpose_naive.cu` | 📝 **your turn**, the keystone | `out[x*h+y] = in[y*w+x]`. Implement it, then **predict before you profile**: one end is coalesced, the other is strided by `h`. Roughly what fraction of peak bandwidth survives? |
+
 **Transpose is the keystone.** A naive transpose reads coalesced but *writes*
 strided (or vice versa). You cannot win with thread mapping alone — which is
 exactly the cliffhanger that forces you into the [memory
-hierarchy](level03-memory-hierarchy.md) and shared-memory tiling at Level 4.
+hierarchy](level03-memory-hierarchy.md) and shared-memory tiling at Level 3.
+
+!!! tip "Prove it, don't trust it"
+    `make level02-test` runs each kernel against a CPU reference at awkward sizes
+    (1023×577, 1×1, single-block) so an off-by-one in the boundary guard or a
+    swapped `(w,h)` actually fails. Then run `level02_demo` and compare the
+    `invert` GB/s against the `transpose` GB/s on the same image — same bytes
+    moved, very different bandwidth. That gap *is* the lesson.
 
 ??? question "Self-check"
     For a 1920×1080 image with `block(32, 8)`, how many blocks does
