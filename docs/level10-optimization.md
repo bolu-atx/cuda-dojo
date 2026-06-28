@@ -13,6 +13,9 @@ optimization. The tools don't lie; your intuition does.
 |------|-------|---------|
 | **Nsight Systems** (`nsys`) | whole timeline | Where does wall-clock go? Am I copy-bound? Are kernels overlapping? Gaps? |
 | **Nsight Compute** (`ncu`) | one kernel, deeply | *Why* is this kernel slow? Memory vs compute bound, occupancy, stalls, the roofline dot. |
+| **Compute Sanitizer** | correctness and memory safety | Out-of-bounds, races, init errors, API misuse |
+| **NVTX** | timeline annotation | Which application phase does this kernel or copy belong to? |
+| **PTX/SASS tools** | generated code | What did the compiler actually emit? |
 
 Always start with `nsys` — it stops you from optimizing a kernel that's only 5% of
 runtime while a `cudaMemcpy` eats 60%. *Then* `ncu` the kernel that actually
@@ -21,7 +24,13 @@ dominates.
 ```bash
 nsys profile -o timeline ./demo            # then open in the Nsight Systems GUI
 ncu --set full -k my_kernel ./demo         # full metric set for one kernel
+compute-sanitizer ./test                   # memory safety before performance claims
+nvdisasm ./demo                            # inspect SASS when metrics demand it
 ```
+
+Metrics to learn by name: **Achieved Occupancy**, **Warp Stall Reasons**,
+**Eligible Warps**, **Issue Slots**, **L2 Hit Rate**, **Global Load/Store
+Efficiency**, **Shared Bank Conflicts**, and **Tensor Core Utilization**.
 
 ## The optimization decision tree
 
@@ -75,6 +84,10 @@ Re-derive *bound by what?* first (Level 4) — the rest follows:
   *version → time → bound → what changed*. That table is the deliverable.
 - Open the `nsys` timeline and the `ncu` roofline for your kernel and read the
   dot's position. Make a prediction, then verify it against the metric.
+- Add **NVTX ranges** around a multi-stage demo so the `nsys` timeline answers
+  application questions, not just kernel questions.
+- Inspect PTX/SASS only after a source-level hypothesis fails. Use it to explain
+  profiler evidence, not as the first optimization move.
 
 ??? question "Self-check"
     `ncu` shows 95% achieved bandwidth, 35% occupancy, and the roofline dot sitting

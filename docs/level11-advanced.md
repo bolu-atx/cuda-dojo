@@ -13,11 +13,13 @@ trade-offs) is what separates "can write CUDA" from "architects CUDA."
 Separate hardware units that do a small **matrix multiply-accumulate** in one
 operation (e.g. 16×16×16), at many times the throughput of the regular FP32 ALUs.
 They power modern AI. You rarely program them directly — you get them through
-**cuBLAS / CUTLASS / cuDNN**. The `wmma` API exists if you must fuse a custom op
-into a matmul, but the bar for hand-writing them is high.
+**cuBLAS / cuBLASLt / CUTLASS / cuDNN**. The `wmma` API exists if you must fuse a
+custom op into a matmul, but the bar for hand-writing them is high.
 
 - Trade-off: reduced precision inputs (FP16/BF16/TF32/FP8) accumulating in FP32.
   Great for DL and increasingly for HPC mixed-precision; verify your numerics.
+- cuBLASLt is the modern GEMM interface when you need epilogues such as bias,
+  activation, or autotuned layouts.
 
 This pushes the *compute ceiling* of the roofline way up — but only for the
 matmul-shaped work that can use them:
@@ -86,5 +88,7 @@ grid.sync();                 // grid-wide barrier (cooperative launch required)
   clarity.
 - If you have ≥2 GPUs: an **NCCL all-reduce** of a vector, and reason about the
   bandwidth across NVLink/PCIe.
+- Use the [Library Field Guide](track-libraries.md) before trying to write WMMA or
+  CUTLASS code from scratch.
 
 → Continue to [Level 12 — Production Architecture](level12-architecture.md)

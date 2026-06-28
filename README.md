@@ -126,6 +126,10 @@ Given an HPC/SIMD/OpenMP background, levels 1–2 should go fast; the real payof
 is levels 4–10 (memory hierarchy, warp programming, Nsight-driven perf analysis,
 and stream/graph pipelines).
 
+The docs also include three advanced tracks that stay in the same Feynman style:
+architecture, libraries, and imaging/CV. Each one is built around prediction,
+interactive widgets, and concrete CUDA reps rather than reference-manual lists.
+
 ## Profiling (from Level 4 onward)
 
 Release builds compile with `-lineinfo` so the profilers map SASS back to source:

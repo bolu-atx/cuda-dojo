@@ -17,7 +17,9 @@ battle-tested libraries own the hard, well-studied primitives.
 | **cuBLAS** | dense linear algebra (GEMM, GEMV) | any matrix multiply — don't write your own in prod |
 | **cuFFT** | fast Fourier transforms | spectral methods, convolution-via-FFT |
 | **cuRAND** | RNG (host and device) | Monte Carlo, augmentation, init |
-| **cuSPARSE / cuDNN / CUTLASS** | sparse / DL / templated GEMM | specialized, or when you must fuse into GEMM |
+| **cuSPARSE / cuSOLVER** | sparse matrices / decompositions | graphs, finite element, least squares, SVD/eigen |
+| **NPP** | image primitives | resize, filters, morphology, histograms, color conversion |
+| **cuDNN / CUTLASS / cuBLASLt** | DL primitives / templated GEMM / modern GEMM | specialized, or when you must fuse into GEMM |
 
 !!! tip "Thrust vs CUB — the practical split"
     **Thrust** is high-level and host-driven: `thrust::reduce(d_vec.begin(), …)`
@@ -64,6 +66,11 @@ theme).
   technique.
 - Replace your Level 1 reduction with **`cub::DeviceReduce::Sum`** and compare
   lines of code and throughput.
+- Try one **NPP image primitive** that overlaps with a custom exercise. Compare
+  boundary semantics first, then speed.
+
+For the broader production map, continue into the
+[Library Field Guide](track-libraries.md).
 
 ??? question "Self-check"
     You wrote a tuned GEMM hitting 40% of peak FLOPS. cuBLAS hits 92%. Should you

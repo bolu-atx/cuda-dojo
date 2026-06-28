@@ -34,6 +34,8 @@ allocates *once* and reuses:
 
 - A **memory pool / arena** (or `cudaMallocAsync` with a `cudaMemPool_t`) hands out
   buffers from a pre-reserved region with near-zero overhead.
+- The **stream-ordered allocator** lets allocation and free obey stream
+  dependencies instead of forcing whole-device synchronization.
 - Frameworks (PyTorch's caching allocator, RAPIDS RMM) are exactly this. The rule:
   **never allocate in the hot path.**
 
@@ -63,6 +65,8 @@ travels*:
 
 - **Zero-copy / pinned / unified memory** — choose deliberately; each trades
   control for convenience.
+- **Peer-to-peer** — one GPU can access another GPU's memory when topology and
+  permissions allow it.
 - **GPUDirect RDMA / Storage** — move data NIC→GPU or NVMe→GPU without staging
   through host RAM. Essential for high-ingest pipelines (think streaming sensor or
   sequencing data).
@@ -83,5 +87,7 @@ travels*:
   throughput and tail latency, not just kernel time.
 - Profile the *whole system* in `nsys`: prove transfers are hidden and there are no
   gaps between graph replays.
+- Continue into [Imaging & Computer Vision](track-imaging.md) for production image
+  pipelines and GPU image primitives.
 
 → Continue to [Level 13 — Algorithm Design](level13-algorithm-design.md)

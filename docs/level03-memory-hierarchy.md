@@ -44,6 +44,11 @@ from DRAM get used? Vector add reuses each byte *once* — nothing to cache, pur
 bandwidth. A convolution or matrix multiply reuses each input many times — huge
 opportunity to stage it in shared memory.
 
+From here on, start reading memory access as hardware transactions, not scalar
+loads. A warp issues 32 lane requests; the memory system groups them into one or
+more transactions depending on alignment and contiguity. That transaction count is
+why a correct strided kernel can still be slow.
+
 !!! note "Constant and read-only memory: the cheap wins"
     - `__constant__` (64 KB) is perfect for small read-only data that *every*
       thread reads the same way — filter coefficients, transform matrices. A warp
@@ -133,6 +138,8 @@ that buffer is worth roughly 2× the bandwidth:
   after (it roughly doubles).
 - **Read-only convolution** — put the filter in `__constant__`, mark the image
   `__restrict__`, and watch the read-only cache do work for free.
+- When you are ready for the hardware-level version of this model, read
+  [Architecture Deep Dive](track-architecture.md).
 
 ??? question "Self-check"
     Vector add gets ~0 benefit from shared memory but tiled transpose gets ~2×.

@@ -16,6 +16,22 @@ can predict what the widget will do before you move the slider.** So on every
 page, read the question, *guess the answer*, then check yourself against the
 interactive example.
 
+## Why this still matters in the age of AI
+
+An AI agent can emit a tiled transpose or a warp reduction in seconds — the
+*tricks* are now cheap. What it cannot do for you is hold the mental model: knowing
+that a GPU trades latency for throughput, that a kernel is memory- or compute-bound,
+that where data lives dominates speed. Those big concepts are what let you *judge*
+the code an agent hands you — to ask the right question, spot the kernel that quietly
+serializes a warp, predict which wall you'll hit, and tell a real speedup from a
+plausible-looking one.
+
+The techniques follow from the foundation, not the other way around. Memorize a trick
+and you can reproduce one kernel; understand the model and every trick becomes obvious,
+including the ones nobody has written down yet. That is the part the agent can't
+outsource — and the part this dojo trains. Feynman's line at the top is the whole
+point: if you can only generate it, you don't yet understand it.
+
 ## How to use this guide
 
 1. **Read the hook.** Each level opens with a question you can't yet answer.
@@ -42,6 +58,17 @@ interactive example.
 | [11](level11-advanced.md) | Tensor cores, graphs, multi-GPU | — |
 | [12](level12-architecture.md) | Production = pools + graphs + streams | end-to-end pipeline |
 | [13](level13-algorithm-design.md) | Reformulate the algorithm for the hardware | your own |
+
+## Advanced tracks
+
+The levels are the main climbing route. The tracks are the senior-engineer map:
+use them once the core model is stable, or dip into one when a project demands it.
+
+| Track | What it covers | When to study it |
+|------|----------------|------------------|
+| [Architecture Deep Dive](track-architecture.md) | SM anatomy, schedulers, issue slots, occupancy, cache behavior | when profiler metrics need a hardware explanation |
+| [Library Field Guide](track-libraries.md) | CUB, Thrust, cuBLAS, cuFFT, cuRAND, cuSPARSE, cuSOLVER, NPP | before writing a kernel for a standard primitive |
+| [Imaging & Computer Vision](track-imaging.md) | stencils, separable filters, FFT convolution, image warps, production pipelines | for microscopy, cameras, medical imaging, and production CV |
 
 ## Tailored path
 

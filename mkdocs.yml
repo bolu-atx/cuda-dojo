@@ -60,17 +60,22 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  - "Level 0 — GPU Mental Model": level00-mental-model.md
-  - "Level 1 — CUDA Basics": level01-basics.md
-  - "Level 2 — Thread Mapping": level02-thread-mapping.md
-  - "Level 3 — Memory Hierarchy": level03-memory-hierarchy.md
-  - "Level 4 — Performance Thinking": level04-performance.md
-  - "Level 5 — Shared-Memory Algorithms": level05-shared-memory.md
-  - "Level 6 — Warp Programming": level06-warps.md
-  - "Level 7 — CUDA Libraries": level07-libraries.md
-  - "Level 8 — Streams & Asynchrony": level08-streams.md
-  - "Level 9 — Multi-Kernel Algorithms": level09-multi-kernel.md
-  - "Level 10 — Production Optimization": level10-optimization.md
-  - "Level 11 — Advanced CUDA": level11-advanced.md
-  - "Level 12 — Production Architecture": level12-architecture.md
-  - "Level 13 — Algorithm Design": level13-algorithm-design.md
+  - Levels:
+      - "Level 0 — GPU Mental Model": level00-mental-model.md
+      - "Level 1 — CUDA Basics": level01-basics.md
+      - "Level 2 — Thread Mapping": level02-thread-mapping.md
+      - "Level 3 — Memory Hierarchy": level03-memory-hierarchy.md
+      - "Level 4 — Performance Thinking": level04-performance.md
+      - "Level 5 — Shared-Memory Algorithms": level05-shared-memory.md
+      - "Level 6 — Warp Programming": level06-warps.md
+      - "Level 7 — CUDA Libraries": level07-libraries.md
+      - "Level 8 — Streams & Asynchrony": level08-streams.md
+      - "Level 9 — Multi-Kernel Algorithms": level09-multi-kernel.md
+      - "Level 10 — Production Optimization": level10-optimization.md
+      - "Level 11 — Advanced CUDA": level11-advanced.md
+      - "Level 12 — Production Architecture": level12-architecture.md
+      - "Level 13 — Algorithm Design": level13-algorithm-design.md
+  - Advanced Tracks:
+      - "Architecture Deep Dive": track-architecture.md
+      - "Library Field Guide": track-libraries.md
+      - "Imaging & Computer Vision": track-imaging.md
