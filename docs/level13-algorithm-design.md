@@ -86,7 +86,10 @@ whole skill of this level: recognizing when the GPU-friendly algorithm is a
 
 ---
 
-You've reached the end of the tree. From here it's reps: take each project in the
+You've reached the end of the main climb. From here it's reps: take each project in the
 code repo, drive it with the profiler, and — most importantly — start reformulating
 *your own* problems to fit the machine. That's the difference between using a GPU
 and thinking in one.
+
+For the frontier — pipelining tiles *inside* a single kernel on the newest hardware —
+continue to [Level 14 — The Intra-Kernel Pipeline](level14-tile-pipeline.md).

@@ -41,7 +41,7 @@ allocates *once* and reuses:
 
 ## Steady-state pipeline = streams + graphs
 
-Combine Level 8 (overlap) and Level 11 (graphs): build the pipeline once as a
+Combine Level 8 (overlap) and Level 11 (orchestration patterns): build the pipeline once as a
 stream graph, capture it, then replay per frame/batch. Transfers hide behind
 compute and launch overhead is amortized to ~one call:
 
