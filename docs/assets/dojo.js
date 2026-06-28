@@ -947,6 +947,118 @@
     return draw;
   }
 
+  // =======================================================================
+  // execution-model — logical grid/block/thread vs physical SM/warp/lane
+  // =======================================================================
+  function executionModel(root) {
+    shell(root, "Two machines: logical grid → physical SMs",
+      "You write the left machine; the runtime schedules it onto the right. Pick a block and trace it: it lands on exactly one SM and splits into warps of 32 lanes. (The block→SM mapping shown is illustrative — the real choice is the runtime's and isn't guaranteed.)");
+    const W = 720, H = 280;
+    const { ctx } = canvas(root, W, H);
+    const cs = controls(root);
+    const out = readout(root);
+    let blocks = 8, sms = 4, tpb = 128, sel = 3;
+
+    slider(cs, "blocks in grid", 1, 12, blocks, 1, v => { blocks = v; clampSel(); sSel.max = blocks - 1; draw(); });
+    slider(cs, "SMs on the GPU", 1, 6, sms, 1, v => { sms = v; draw(); });
+    slider(cs, "threads / block", 32, 256, tpb, 32, v => { tpb = v; draw(); });
+    const sSel = slider(cs, "highlight block", 0, blocks - 1, sel, 1, v => { sel = v; draw(); });
+
+    function clampSel() { if (sel > blocks - 1) { sel = blocks - 1; sSel.value = sel; } }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const ink = textColor(), accent = C.accent(), faint = C.faint(), cool = C.cool();
+
+      ctx.textAlign = "left";
+      ctx.font = "bold 12px monospace";
+      ctx.fillStyle = ink;
+      ctx.fillText("LOGICAL — you write", 10, 16);
+      ctx.fillText("PHYSICAL — runtime schedules", 372, 16);
+
+      ctx.strokeStyle = faint;
+      ctx.beginPath(); ctx.moveTo(360, 24); ctx.lineTo(360, 200); ctx.stroke();
+
+      // ---- left: the grid of blocks you launched ----
+      const cols = 4, rows = Math.ceil(blocks / cols);
+      const gx = 10, gy = 30, gw = 330, gh = 165;
+      const cw = (gw - (cols - 1) * 8) / cols;
+      const chh = Math.min(40, (gh - (rows - 1) * 8) / rows);
+      for (let b = 0; b < blocks; b++) {
+        const r = Math.floor(b / cols), c = b % cols;
+        const x = gx + c * (cw + 8), y = gy + r * (chh + 8);
+        ctx.fillStyle = b === sel ? accent : faint;
+        ctx.fillRect(x, y, cw, chh);
+        ctx.fillStyle = b === sel ? "#0b1500" : ink;
+        ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText("block " + b, x + cw / 2, y + chh / 2 + 3);
+      }
+
+      // ---- right: SM columns, blocks assigned round-robin ----
+      const rx = 372, ry = 30, rw = W - rx - 10, rh = 165;
+      const smw = (rw - (sms - 1) * 6) / sms;
+      for (let s = 0; s < sms; s++) {
+        const x = rx + s * (smw + 6);
+        ctx.fillStyle = "rgba(128,128,128,0.10)";
+        ctx.fillRect(x, ry, smw, rh);
+        ctx.strokeStyle = faint; ctx.strokeRect(x, ry, smw, rh);
+        ctx.fillStyle = ink; ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText("SM " + s, x + smw / 2, ry + rh + 12);
+        let slot = 0;
+        for (let b = s; b < blocks; b += sms) {
+          const by = ry + 6 + slot * 24;
+          if (by + 18 > ry + rh) break;
+          ctx.fillStyle = b === sel ? accent : "rgba(118,185,0,0.18)";
+          ctx.fillRect(x + 4, by, smw - 8, 18);
+          ctx.fillStyle = b === sel ? "#0b1500" : ink;
+          ctx.font = "9px monospace"; ctx.textAlign = "center";
+          ctx.fillText("blk " + b, x + smw / 2, by + 12);
+          slot++;
+        }
+      }
+
+      // ---- bottom: the selected block decomposed into warps ----
+      const warps = Math.ceil(tpb / 32);
+      const wy = 218, wh = 28, wxx = 10, ww = W - 20;
+      ctx.fillStyle = ink; ctx.font = "11px monospace"; ctx.textAlign = "left";
+      ctx.fillText("block " + sel + " → " + warps + " warps of 32 lanes:", wxx, wy - 6);
+      const segw = (ww - (warps - 1) * 4) / warps;
+      for (let w = 0; w < warps; w++) {
+        const x = wxx + w * (segw + 4);
+        ctx.fillStyle = "rgba(58,142,224,0.30)";
+        ctx.fillRect(x, wy, segw, wh);
+        ctx.strokeStyle = cool; ctx.strokeRect(x, wy, segw, wh);
+        ctx.fillStyle = ink; ctx.font = "10px monospace"; ctx.textAlign = "center";
+        if (segw > 28) ctx.fillText("warp " + w, x + segw / 2, wy + wh / 2 + 3);
+      }
+
+      out.innerHTML = "block <b>" + sel + "</b> → <b>SM " + (sel % sms) +
+        "</b> (one SM, never split) — decomposes into <b>" + warps +
+        "</b> warps × 32 = <b>" + (warps * 32) + "</b> lanes. You chose " + blocks +
+        " blocks and " + tpb + " threads/block; the runtime chose the SM.";
+    }
+    draw();
+    return draw;
+  }
+
+  // ---- placeholder for hooks whose interactive build is still pending ----
+  // Pages may plant a <div data-dojo="..."> ahead of its JS so the prose and the
+  // widget land in one reviewable step. Until the factory exists, render a labelled
+  // stub instead of a blank div, themed via the shared CSS classes.
+  const PENDING = {
+    "block-to-sm": "blocks being assigned to SMs — a block never spans two SMs",
+    "warp-lanes": "threadIdx.x → warp id and lane id",
+    "sync-scope": "who waits for __syncwarp, __syncthreads, kernel boundary, event, CPU sync",
+    "sync-mask": "toggle lane predicates and watch the participant mask change",
+    "cross-warp-race": "why __syncwarp() does not order warp 0 against warp 1",
+    "stream-event-dependency": "two stream queues linked by an event",
+  };
+  function placeholder(root) {
+    const label = root.dataset.dojo;
+    shell(root, "Widget: " + label, "Interactive build pending — " + (PENDING[label] || "coming soon") + ".");
+    return null;
+  }
+
   // ---- registry & automount ---------------------------------------------
   const FACTORIES = {
     "thread-index": threadIndex,
@@ -963,6 +1075,13 @@
     "sm-scheduler": smScheduler,
     "library-choice": libraryChoice,
     "imaging-pattern": imagingPattern,
+    "execution-model": executionModel,
+    "block-to-sm": placeholder,
+    "warp-lanes": placeholder,
+    "sync-scope": placeholder,
+    "sync-mask": placeholder,
+    "cross-warp-race": placeholder,
+    "stream-event-dependency": placeholder,
   };
 
   function mountAll() {

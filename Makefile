@@ -131,7 +131,7 @@ dep-check:
 	check cmake "cmake --version" "brew/apt install cmake (>=3.24)" req; \
 	echo "build (optional):"; \
 	check ninja "ninja --version" "faster builds: apt/brew install ninja" opt; \
-	echo "profiling (optional, Level 4+):"; \
+	echo "profiling (optional, Level 5+):"; \
 	check nsys "nsys --version | head -n1" "Nsight Systems (ships with CUDA Toolkit)" opt; \
 	check ncu  "ncu --version | head -n1"  "Nsight Compute (ships with CUDA Toolkit)" opt; \
 	check compute-sanitizer "compute-sanitizer --version | head -n1" "memcheck (ships with CUDA Toolkit)" opt; \

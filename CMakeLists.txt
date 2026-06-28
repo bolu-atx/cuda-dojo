@@ -42,7 +42,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Emit line info in Release so Nsight Compute can map SASS back to source —
-# you'll want this from Level 4 onward.
+# you'll want this from Level 5 onward.
 set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -lineinfo")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -61,7 +61,8 @@ enable_testing()
 
 add_subdirectory(levels/level01_vector_add)
 add_subdirectory(levels/level02_thread_mapping)
-add_subdirectory(levels/level03_memory_hierarchy)
-add_subdirectory(levels/level04_performance)
-add_subdirectory(levels/level05_shared_memory)
-add_subdirectory(levels/level06_warps)
+add_subdirectory(levels/level03_execution_model)
+add_subdirectory(levels/level04_memory_hierarchy)
+add_subdirectory(levels/level05_performance)
+add_subdirectory(levels/level06_shared_memory)
+add_subdirectory(levels/level07_warps)
