@@ -58,7 +58,7 @@ point: if you can only generate it, you don't yet understand it.
 | [11](level11-multi-kernel.md) | Real programs are kernel graphs | GEMM |
 | [12](level12-optimization.md) | Nsight tells you the truth | 20 ms → 1 ms |
 | [13](level13-orchestration.md) | Compose work into pipelines with streams, events, graphs | producer/consumer pipeline |
-| [14](level14-architecture.md) | Production = pools + graphs + streams | end-to-end pipeline |
+| [14](level14-architecture.md) | Production = memory pools + data movement (PCIe / NVLink / GPUDirect) | end-to-end pipeline |
 | [15](level15-algorithm-design.md) | Reformulate the algorithm for the hardware | your own |
 | [16](level16-tile-pipeline.md) | Pipeline tiles inside one kernel | `cp.async` GEMM tile loop |
 

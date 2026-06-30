@@ -39,17 +39,17 @@ allocates *once* and reuses:
 - Frameworks (PyTorch's caching allocator, RAPIDS RMM) are exactly this. The rule:
   **never allocate in the hot path.**
 
-## Steady-state pipeline = streams + graphs
+## Steady-state pipeline — assembled from the pieces above
 
-Combine Level 10 (overlap) and Level 13 (orchestration patterns): build the pipeline once as a
-stream graph, capture it, then replay per frame/batch. Transfers hide behind
-compute and launch overhead is amortized to ~one call:
+The orchestration itself is [Level 13](level13-orchestration.md): build the pipeline as a
+stream graph, capture it, replay per frame. Architecture's job is what *feeds* that replay.
+The buffers the graph cycles through come from the **pool**, not a hot-path `cudaMalloc`, and
+the **scheduler** decides which captured graph runs on which stream. The pipeline is the
+engine; the pool and the scheduler are the fuel line and the throttle.
 
-<div data-dojo="streams"></div>
-
-For a video/imaging service this is the difference between hitting frame rate and
-not: at steady state, copy-in and copy-out are *invisible*, fully overlapped with
-the kernels.
+For a video/imaging service this is the difference between hitting frame rate and not: at
+steady state, copy-in and copy-out are *invisible* (Level 13's overlap), and every buffer the
+graph touches was reserved once, up front (this level's rule).
 
 ## The data-movement hierarchy you must respect
 

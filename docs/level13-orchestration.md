@@ -95,15 +95,12 @@ and frame 0 is downloading.
     <text x="10" y="98">compute</text>
     <text x="10" y="138">download</text>
   </g>
-  <!-- frame 1 -->
   <rect class="fill-accent" x="120" y="42" width="120" height="24" rx="4"/><text class="mono" x="180" y="59" text-anchor="middle" fill="#0b1500">F1</text>
   <rect class="fill-accent" x="240" y="82" width="120" height="24" rx="4"/><text class="mono" x="300" y="99" text-anchor="middle" fill="#0b1500">F1</text>
   <rect class="fill-accent" x="360" y="122" width="120" height="24" rx="4"/><text class="mono" x="420" y="139" text-anchor="middle" fill="#0b1500">F1</text>
-  <!-- frame 2 -->
   <rect class="fill-faint stroke-accent" x="240" y="42" width="120" height="24" rx="4"/><text class="mono" x="300" y="59" text-anchor="middle">F2</text>
   <rect class="fill-faint stroke-accent" x="360" y="82" width="120" height="24" rx="4"/><text class="mono" x="420" y="99" text-anchor="middle">F2</text>
   <rect class="fill-faint stroke-accent" x="480" y="122" width="120" height="24" rx="4"/><text class="mono" x="540" y="139" text-anchor="middle">F2</text>
-  <!-- frame 3 -->
   <rect class="fill-faint stroke-faint" x="360" y="42" width="120" height="24" rx="4"/><text class="mono" x="420" y="59" text-anchor="middle">F3</text>
   <rect class="fill-faint stroke-faint" x="480" y="82" width="120" height="24" rx="4"/><text class="mono" x="540" y="99" text-anchor="middle">F3</text>
   <rect class="fill-faint stroke-faint" x="600" y="122" width="120" height="24" rx="4"/><text class="mono" x="660" y="139" text-anchor="middle">F3</text>
@@ -146,7 +143,6 @@ record an event per producer and have the consumer's stream wait on every one.
   <defs>
     <marker id="dojoarrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path class="fill-accent" d="M0,0 L6,3 L0,6 z"/></marker>
   </defs>
-  <!-- fan-out -->
   <text class="mono" x="20" y="20">fan-out</text>
   <rect class="fill-accent" x="40" y="55" width="70" height="30" rx="4"/><text class="mono" x="75" y="74" text-anchor="middle" fill="#0b1500">FFT</text>
   <rect class="fill-faint stroke-accent" x="200" y="25" width="120" height="26" rx="4"/><text class="mono" x="260" y="42" text-anchor="middle">features</text>
@@ -155,7 +151,6 @@ record an event per producer and have the consumer's stream wait on every one.
   <path class="stroke-faint" fill="none" marker-end="url(#dojoarrow)" d="M110,70 L195,38"/>
   <path class="stroke-faint" fill="none" marker-end="url(#dojoarrow)" d="M110,70 L195,73"/>
   <path class="stroke-faint" fill="none" marker-end="url(#dojoarrow)" d="M110,70 L195,108"/>
-  <!-- fan-in -->
   <text class="mono" x="440" y="20">fan-in</text>
   <rect class="fill-faint stroke-accent" x="440" y="25" width="80" height="26" rx="4"/><text class="mono" x="480" y="42" text-anchor="middle">A</text>
   <rect class="fill-faint stroke-accent" x="440" y="60" width="80" height="26" rx="4"/><text class="mono" x="480" y="77" text-anchor="middle">B</text>
@@ -172,10 +167,28 @@ not a barrier; it's *recording all three events and waiting on all three.*
 
 ## Task graph — the generalization
 
-Once a workload is a fixed DAG — `FFT → {filter, histogram} → classifier → output`,
-re-run every frame — issuing it kernel-by-kernel pays the CPU launch cost
-([Level 11](level11-multi-kernel.md)) *every* time. **CUDA Graphs** capture the whole
-shape once and replay it with a single launch:
+Once a workload settles into a *fixed* DAG — here `FFT` fans out to `filter` and
+`histogram`, which fan back in to a `classifier`, then `output` — and you re-run that
+same shape every frame, issuing it kernel-by-kernel pays the CPU launch cost
+([Level 11](level11-multi-kernel.md)) *every* time.
+
+<svg class="dojo-diagram" viewBox="0 0 760 170" role="img" aria-label="A fixed task DAG: FFT fans out to filter and histogram, which fan back in to a classifier, then output.">
+  <defs>
+    <marker id="dagarrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path class="fill-accent" d="M0,0 L6,3 L0,6 z"/></marker>
+  </defs>
+  <rect class="fill-accent" x="20" y="68" width="90" height="34" rx="4"/><text class="mono" x="65" y="89" text-anchor="middle" fill="#0b1500">FFT</text>
+  <rect class="fill-faint stroke-accent" x="210" y="28" width="120" height="30" rx="4"/><text class="mono" x="270" y="47" text-anchor="middle">filter</text>
+  <rect class="fill-faint stroke-accent" x="210" y="112" width="120" height="30" rx="4"/><text class="mono" x="270" y="131" text-anchor="middle">histogram</text>
+  <rect class="fill-faint stroke-accent" x="430" y="68" width="120" height="34" rx="4"/><text class="mono" x="490" y="89" text-anchor="middle">classifier</text>
+  <rect class="fill-accent" x="650" y="68" width="90" height="34" rx="4"/><text class="mono" x="695" y="89" text-anchor="middle" fill="#0b1500">output</text>
+  <path class="stroke-faint" fill="none" marker-end="url(#dagarrow)" d="M110,80 L205,46"/>
+  <path class="stroke-faint" fill="none" marker-end="url(#dagarrow)" d="M110,90 L205,124"/>
+  <path class="stroke-faint" fill="none" marker-end="url(#dagarrow)" d="M330,46 L425,80"/>
+  <path class="stroke-faint" fill="none" marker-end="url(#dagarrow)" d="M330,124 L425,90"/>
+  <path class="stroke-faint" fill="none" marker-end="url(#dagarrow)" d="M550,85 L645,85"/>
+</svg>
+
+**CUDA Graphs** capture that whole shape once and replay it with a single launch:
 
 ```cpp
 cudaStreamBeginCapture(s, ...);   //   record the streams + events you just built
@@ -187,8 +200,52 @@ cudaGraphLaunch(exec, s);         // replay the entire DAG, one dispatch
 
 A graph is not a new pattern — it's *all the patterns above, frozen*. The producer/
 consumer edges, the fan-out, the fan-in become the graph's dependency edges, and the
-driver schedules them without the CPU in the loop. This is the natural successor to the
-stream pipeline for *steady-state* work, and the backbone of [Level 14](level14-architecture.md).
+driver schedules them without the CPU in the loop.
+
+Before you peek, predict: the *work* is identical both ways — same five kernels, same
+edges — so where does the speedup come from? It's the **gaps**. Issued kernel-by-kernel,
+the CPU re-enters to launch each node, and those re-entry stalls sit between the kernels;
+captured, the driver replays the lot from one dispatch and the gaps vanish:
+
+<svg class="dojo-diagram" viewBox="0 0 760 180" role="img" aria-label="The same four-kernel chain issued two ways: kernel-by-kernel leaves CPU-relaunch gaps between kernels; a captured graph replays them back-to-back from one dispatch and finishes sooner.">
+  <text class="mono" x="10" y="20">time →</text>
+  <text class="mono" x="300" y="20">faint gaps = CPU relaunch overhead</text>
+  <text class="mono" x="10" y="60">per-launch</text>
+  <rect class="fill-accent" x="150" y="44" width="70" height="24" rx="4"/><text class="mono" x="185" y="61" text-anchor="middle" fill="#0b1500">FFT</text>
+  <rect class="fill-faint stroke-faint" x="220" y="44" width="30" height="24"/>
+  <rect class="fill-accent" x="250" y="44" width="70" height="24" rx="4"/><text class="mono" x="285" y="61" text-anchor="middle" fill="#0b1500">filt</text>
+  <rect class="fill-faint stroke-faint" x="320" y="44" width="30" height="24"/>
+  <rect class="fill-accent" x="350" y="44" width="70" height="24" rx="4"/><text class="mono" x="385" y="61" text-anchor="middle" fill="#0b1500">hist</text>
+  <rect class="fill-faint stroke-faint" x="420" y="44" width="30" height="24"/>
+  <rect class="fill-accent" x="450" y="44" width="70" height="24" rx="4"/><text class="mono" x="485" y="61" text-anchor="middle" fill="#0b1500">clf</text>
+  <text class="mono" x="10" y="136">graph</text>
+  <rect class="fill-accent" x="150" y="120" width="68" height="24" rx="4"/><text class="mono" x="184" y="137" text-anchor="middle" fill="#0b1500">FFT</text>
+  <rect class="fill-accent" x="220" y="120" width="68" height="24" rx="4"/><text class="mono" x="254" y="137" text-anchor="middle" fill="#0b1500">filt</text>
+  <rect class="fill-accent" x="290" y="120" width="68" height="24" rx="4"/><text class="mono" x="324" y="137" text-anchor="middle" fill="#0b1500">hist</text>
+  <rect class="fill-accent" x="360" y="120" width="68" height="24" rx="4"/><text class="mono" x="394" y="137" text-anchor="middle" fill="#0b1500">clf</text>
+  <path class="stroke-faint" stroke-dasharray="4 4" fill="none" d="M520,40 L520,160"/>
+  <path class="stroke-accent" stroke-dasharray="4 4" fill="none" d="M430,116 L430,160"/>
+  <text class="mono" x="150" y="174">one dispatch, no gaps — done at the accent line, sooner</text>
+</svg>
+
+This is the natural successor to the stream pipeline for *steady-state* work, and the
+backbone of [Level 14](level14-architecture.md).
+
+## Choosing: fuse, pipeline, or capture
+
+These three aren't a menu you pick by taste — each answers a *different* bottleneck. Read
+the symptom off the profiler first, then choose (and note they **compose**, not compete):
+
+| Reach for… | When the bottleneck is… | The move | Skip it when… |
+|---|---|---|---|
+| **Kernel fusion** | back-to-back kernels round-tripping an intermediate through global memory (write it, then immediately re-read it) | merge them into one kernel so the intermediate stays in registers/shared memory and the second launch disappears | the kernels are independent (fusing just serializes them) or need incompatible launch shapes |
+| **Streams + pipeline** | engines idling — copies not overlapping compute, independent work forced into a single line | put independent stages on separate streams and stagger iterations so PCIe-in, SMs, and PCIe-out all stay busy | every step truly depends on the previous one (there is nothing to overlap) |
+| **CUDA graphs** | CPU launch cost dominating a *fixed* DAG you re-issue every iteration | capture the streams + events once, replay the whole shape with a single dispatch | the dependency shape changes each iteration, or you run it only once |
+
+The order is also the build order: **fuse** what should have been one kernel, **pipeline**
+what's genuinely independent, then **capture** the settled shape as a graph. Fusion shrinks
+the graph, streams give it its parallel edges, and the graph removes the CPU from replaying
+it.
 
 ## Persistent worker — when launches themselves are the cost
 
